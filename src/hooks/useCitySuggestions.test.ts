@@ -17,7 +17,7 @@ describe('useCitySuggestions', () => {
   it('returns suggestions for the typed city', async () => {
     mockFetchWithSuggestions([OSAKA]);
 
-    const { result } = renderHook(() => useCitySuggestions('Osa', ''));
+    const { result } = renderHook(() => useCitySuggestions('Osa'));
 
     await waitFor(() => expect(result.current).toHaveLength(1));
     expect(result.current[0]).toEqual({
@@ -25,22 +25,36 @@ describe('useCitySuggestions', () => {
       city: 'Osaka',
       state: 'Osaka Prefecture',
       countryCode: 'JP',
+      coordinates: { lat: 1.46, lon: 103.76 },
     });
   });
 
-  it('narrows the lookup to the country field when it is a known country', async () => {
+  it('narrows the lookup to a country typed after a comma', async () => {
     const fetchMock = mockFetchWithSuggestions([OSAKA]);
 
-    renderHook(() => useCitySuggestions('Osa', 'Japan'));
+    renderHook(() => useCitySuggestions('Osa, Japan'));
 
     await waitFor(() => expect(getSuggestionCalls(fetchMock)).toHaveLength(1));
     expect(queryOf(getSuggestionCalls(fetchMock)[0])).toBe('Osa,JP');
   });
 
+  it('keeps the suggestions while the country is still being typed', async () => {
+    mockFetchWithSuggestions([OSAKA]);
+    const { result, rerender } = renderHook(({ text }) => useCitySuggestions(text), {
+      initialProps: { text: 'Osaka' },
+    });
+    await waitFor(() => expect(result.current).toHaveLength(1));
+
+    rerender({ text: 'Osaka, Ja' });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    expect(result.current).toHaveLength(1);
+  });
+
   it('does not look up very short input', async () => {
     const fetchMock = mockFetchWithSuggestions([OSAKA]);
 
-    const { result } = renderHook(() => useCitySuggestions('O', ''));
+    const { result } = renderHook(() => useCitySuggestions('O'));
     await new Promise((resolve) => setTimeout(resolve, 400));
 
     expect(result.current).toEqual([]);
@@ -51,7 +65,7 @@ describe('useCitySuggestions', () => {
     vi.useFakeTimers();
     const fetchMock = mockFetchWithSuggestions([OSAKA]);
 
-    const { rerender } = renderHook(({ city }) => useCitySuggestions(city, ''), {
+    const { rerender } = renderHook(({ city }) => useCitySuggestions(city), {
       initialProps: { city: '' },
     });
     rerender({ city: 'Os' });
@@ -67,7 +81,7 @@ describe('useCitySuggestions', () => {
 
   it('reuses cached results instead of calling the API again', async () => {
     const fetchMock = mockFetchWithSuggestions([OSAKA]);
-    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city, ''), {
+    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city), {
       initialProps: { city: 'Osa' },
     });
     await waitFor(() => expect(result.current).toHaveLength(1));
@@ -84,7 +98,7 @@ describe('useCitySuggestions', () => {
     const fetchMock = vi.fn(() => Promise.reject(new TypeError('offline')));
     vi.stubGlobal('fetch', fetchMock);
 
-    const { result } = renderHook(() => useCitySuggestions('Osa', ''));
+    const { result } = renderHook(() => useCitySuggestions('Osa'));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(result.current).toEqual([]);
@@ -92,7 +106,7 @@ describe('useCitySuggestions', () => {
 
   it('hides suggestions as soon as the input becomes too short', async () => {
     mockFetchWithSuggestions([OSAKA]);
-    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city, ''), {
+    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city), {
       initialProps: { city: 'Osa' },
     });
     await waitFor(() => expect(result.current).toHaveLength(1));
@@ -104,7 +118,7 @@ describe('useCitySuggestions', () => {
 
   it('hides suggestions immediately when the text is replaced, before the next lookup', async () => {
     mockFetchWithSuggestions([OSAKA]);
-    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city, ''), {
+    const { result, rerender } = renderHook(({ city }) => useCitySuggestions(city), {
       initialProps: { city: 'Osa' },
     });
     await waitFor(() => expect(result.current).toHaveLength(1));

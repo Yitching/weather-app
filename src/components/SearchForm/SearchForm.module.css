@@ -1,6 +1,6 @@
 .form {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 0.75rem;
 }
 
@@ -65,16 +65,15 @@
 }
 
 /*
- * Mobile: inputs share the first row; compact, labelled buttons sit underneath,
+ * Mobile: the input takes the first row; compact, labelled buttons sit underneath,
  * aligned right so they read as actions rather than another input.
  */
 @media (max-width: 640px) {
   .form {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 
   .actions {
-    grid-column: 1 / -1;
     justify-content: flex-end;
   }
 
@@ -99,11 +98,5 @@
 
   .searchText {
     display: inline;
-  }
-}
-
-@media (max-width: 340px) {
-  .form {
-    grid-template-columns: 1fr;
   }
 }

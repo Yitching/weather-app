@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import type { SearchFormValues } from '../../types/weather';
+import { createGeocodingPlace, mockFetchWithSuggestions } from '../../test/fixtures';
 import { SearchForm } from './SearchForm';
 
 /** Renders the controlled form with real state, like App does. */
@@ -11,14 +11,14 @@ function renderForm({ isLoading = false } = {}) {
   const onClear = vi.fn();
 
   function Harness() {
-    const [values, setValues] = useState<SearchFormValues>({ city: '', country: '' });
+    const [value, setValue] = useState('');
     return (
       <SearchForm
-        values={values}
-        onChange={setValues}
+        value={value}
+        onChange={setValue}
         onSearch={onSearch}
         onClear={() => {
-          setValues({ city: '', country: '' });
+          setValue('');
           onClear();
         }}
         isLoading={isLoading}
@@ -27,46 +27,66 @@ function renderForm({ isLoading = false } = {}) {
   }
 
   render(<Harness />);
-  return { onSearch, onClear, user: userEvent.setup() };
+  return {
+    onSearch,
+    onClear,
+    user: userEvent.setup(),
+    input: screen.getByRole('combobox', { name: 'Location' }),
+  };
 }
 
 describe('SearchForm', () => {
-  it('has labelled City and Country inputs', () => {
-    renderForm();
+  it('has one labelled search box', () => {
+    const { input } = renderForm();
 
     expect(screen.getByRole('search', { name: 'Weather search' })).toBeInTheDocument();
-    expect(screen.getByLabelText('City')).toBeInTheDocument();
-    expect(screen.getByLabelText('Country')).toBeInTheDocument();
+    expect(input).toHaveAttribute('placeholder', 'City and/or country, e.g. Osaka, Japan');
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
   });
 
-  it('submits the typed city and country when Search is clicked', async () => {
-    const { onSearch, user } = renderForm();
+  it('submits the typed text when Search is clicked', async () => {
+    const { onSearch, user, input } = renderForm();
 
-    await user.type(screen.getByLabelText('City'), 'Tokyo');
-    await user.type(screen.getByLabelText('Country'), 'Japan');
+    await user.type(input, 'Tokyo, Japan');
     await user.click(screen.getByRole('button', { name: 'Search' }));
 
-    expect(onSearch).toHaveBeenCalledWith({ city: 'Tokyo', country: 'Japan' });
+    expect(onSearch).toHaveBeenCalledWith('Tokyo, Japan');
   });
 
   it('submits when Enter is pressed', async () => {
-    const { onSearch, user } = renderForm();
+    const { onSearch, user, input } = renderForm();
 
-    await user.type(screen.getByLabelText('City'), 'Seoul{Enter}');
+    await user.type(input, 'Seoul{Enter}');
 
-    expect(onSearch).toHaveBeenCalledWith({ city: 'Seoul', country: '' });
+    expect(onSearch).toHaveBeenCalledWith('Seoul');
   });
 
-  it('clears both inputs when Clear is clicked', async () => {
-    const { onClear, user } = renderForm();
-    await user.type(screen.getByLabelText('City'), 'Tokyo');
-    await user.type(screen.getByLabelText('Country'), 'JP');
+  it('picking a suggestion fills the box and searches exactly that place', async () => {
+    mockFetchWithSuggestions([
+      createGeocodingPlace('London', 'GB', 'England', { lat: 51.5, lon: -0.13 }),
+      createGeocodingPlace('London', 'CA', 'Ontario', { lat: 42.98, lon: -81.25 }),
+    ]);
+    const { onSearch, user, input } = renderForm();
+
+    await user.type(input, 'Lon');
+    await user.click(await screen.findByRole('option', { name: /London.*Ontario/ }));
+
+    expect(input).toHaveValue('London, CA');
+    expect(onSearch).toHaveBeenCalledWith({
+      city: 'London',
+      countryCode: 'CA',
+      coordinates: { lat: 42.98, lon: -81.25 },
+    });
+  });
+
+  it('clears the box when Clear is clicked', async () => {
+    const { onClear, user, input } = renderForm();
+    await user.type(input, 'Tokyo, JP');
 
     await user.click(screen.getByRole('button', { name: 'Clear' }));
 
     expect(onClear).toHaveBeenCalledTimes(1);
-    expect(screen.getByLabelText('City')).toHaveValue('');
-    expect(screen.getByLabelText('Country')).toHaveValue('');
+    expect(input).toHaveValue('');
   });
 
   it('disables the Search button while loading', () => {

@@ -1,81 +1,69 @@
-import { useMemo, type FormEvent } from 'react';
+import type { FormEvent } from 'react';
+import type { WeatherSource } from '../../api/weatherSource';
 import { useCitySuggestions } from '../../hooks/useCitySuggestions';
-import type { CitySuggestion, CountryOption, SearchFormValues } from '../../types/weather';
-import { getCountryName, searchCountries } from '../../utils/country';
+import type { CitySuggestion, LocationQuery } from '../../types/weather';
+import { formatLocation } from '../../utils/location';
 import { AutocompleteField } from '../ui/AutocompleteField';
 import { SearchIcon } from '../ui/Icons';
 import { Spinner } from '../ui/Spinner';
 import styles from './SearchForm.module.css';
 
 interface SearchFormProps {
-  values: SearchFormValues;
-  onChange: (values: SearchFormValues) => void;
-  onSearch: (values: SearchFormValues) => void;
+  value: string;
+  onChange: (value: string) => void;
+  /** Called with the typed text, or with the exact place when a suggestion is picked. */
+  onSearch: (input: string | LocationQuery) => void;
   onClear: () => void;
   isLoading: boolean;
+  /** Where city suggestions come from (live OpenWeather by default). */
+  source?: WeatherSource;
 }
 
 /**
- * City + country inputs (with suggestions) and Search / Clear buttons.
- * A controlled component: the parent owns the values.
+ * One search box for a city, a city and its country, or a country ("Osaka",
+ * "Osaka, Japan", "Japan") with suggestions, and Search / Clear buttons. A controlled component: the parent owns the text.
  */
-export function SearchForm({ values, onChange, onSearch, onClear, isLoading }: SearchFormProps) {
-  const citySuggestions = useCitySuggestions(values.city, values.country);
-  const countrySuggestions = useMemo(() => {
-    const matches = searchCountries(values.country);
-    // Hide the list once the field already holds exactly that country.
-    const isExactMatch =
-      matches.length === 1 &&
-      matches[0]?.name.toLowerCase() === values.country.trim().toLowerCase();
-    return isExactMatch ? [] : matches;
-  }, [values.country]);
+export function SearchForm({
+  value,
+  onChange,
+  onSearch,
+  onClear,
+  isLoading,
+  source,
+}: SearchFormProps) {
+  const suggestions = useCitySuggestions(value, source);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSearch(values);
+    onSearch(value);
   };
 
-  /** Picking a city fills both fields and searches straight away. */
-  const handleCitySelect = (suggestion: CitySuggestion) => {
-    const nextValues = { city: suggestion.city, country: getCountryName(suggestion.countryCode) };
-    onChange(nextValues);
-    onSearch(nextValues);
-  };
-
-  const handleCountrySelect = (country: CountryOption) => {
-    onChange({ ...values, country: country.name });
+  /** Picking a suggestion fills the box and searches exactly that place. */
+  const handleSelect = ({ city, countryCode, coordinates }: CitySuggestion) => {
+    onChange(formatLocation(city, countryCode));
+    onSearch({ city, countryCode, coordinates });
   };
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} role="search" aria-label="Weather search">
       <AutocompleteField
-        label="City"
-        value={values.city}
-        onChange={(city) => onChange({ ...values, city })}
-        suggestions={citySuggestions}
+        label="Location"
+        value={value}
+        onChange={onChange}
+        suggestions={suggestions}
         getKey={(suggestion) => suggestion.id}
         renderSuggestion={(suggestion) => (
           <SuggestionText
             primary={suggestion.city}
-            secondary={[suggestion.state, suggestion.countryCode].filter(Boolean).join(', ')}
+            secondary={
+              suggestion.note ??
+              [suggestion.state, suggestion.countryCode].filter(Boolean).join(', ')
+            }
           />
         )}
-        onSelect={handleCitySelect}
-        placeholder="e.g. Johor"
-        maxLength={100}
-      />
-      <AutocompleteField
-        label="Country"
-        value={values.country}
-        onChange={(country) => onChange({ ...values, country })}
-        suggestions={countrySuggestions}
-        getKey={(country) => country.code}
-        renderSuggestion={(country) => (
-          <SuggestionText primary={country.name} secondary={country.code} />
-        )}
-        onSelect={handleCountrySelect}
-        placeholder="e.g. Malaysia"
-        maxLength={60}
+        onSelect={handleSelect}
+        placeholder="City and/or country, e.g. Osaka, Japan"
+        maxLength={150}
       />
       <div className={styles.actions}>
         <button

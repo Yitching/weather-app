@@ -19,6 +19,7 @@
     "test:e2e:install": "playwright install --with-deps chromium"
   },
   "dependencies": {
+    "countries-list": "^3.4.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

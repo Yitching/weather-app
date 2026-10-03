@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCountryName, normaliseName, resolveCountryCode, searchCountries } from './country';
+import { getCountryName, normaliseName, resolveCountryCode, resolveCountryName } from './country';
 
 describe('resolveCountryCode', () => {
   it.each([
@@ -41,6 +41,14 @@ describe('resolveCountryCode', () => {
   );
 });
 
+describe('resolveCountryName', () => {
+  it('accepts names and aliases, but not bare codes', () => {
+    expect(resolveCountryName('South Korea')).toBe('KR');
+    expect(resolveCountryName('uk')).toBe('GB');
+    expect(resolveCountryName('JP')).toBeNull();
+  });
+});
+
 describe('getCountryName', () => {
   it('returns the English name for a code', () => {
     expect(getCountryName('SG')).toBe('Singapore');
@@ -55,37 +63,5 @@ describe('getCountryName', () => {
 describe('normaliseName', () => {
   it('trims, lower-cases, removes accents and collapses spaces', () => {
     expect(normaliseName('  Côte   D’Ivoire ')).toBe("cote d'ivoire");
-  });
-});
-
-describe('searchCountries', () => {
-  const names = (input: string) => searchCountries(input).map((country) => country.name);
-
-  it('returns countries whose name starts with the text', () => {
-    expect(names('sing')).toEqual(['Singapore']);
-    expect(names('ma')).toEqual(expect.arrayContaining(['Malaysia', 'Madagascar', 'Maldives']));
-  });
-
-  it('also matches later words in the name', () => {
-    expect(names('korea')).toEqual(['South Korea', 'North Korea']);
-  });
-
-  it('puts an exact name, alias or code match first', () => {
-    expect(searchCountries('uk')[0]).toEqual({ code: 'GB', name: 'United Kingdom' });
-    expect(searchCountries('jp')[0]).toEqual({ code: 'JP', name: 'Japan' });
-  });
-
-  it('ignores case and accents', () => {
-    expect(names('CÔTE')).toEqual(['Côte d’Ivoire']);
-  });
-
-  it('limits the number of results', () => {
-    expect(searchCountries('a')).toHaveLength(6);
-    expect(searchCountries('a', 3)).toHaveLength(3);
-  });
-
-  it('returns nothing for empty or unmatched text', () => {
-    expect(searchCountries('  ')).toEqual([]);
-    expect(searchCountries('narnia')).toEqual([]);
   });
 });

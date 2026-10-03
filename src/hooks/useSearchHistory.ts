@@ -17,7 +17,9 @@ function isHistoryEntry(value: unknown): value is SearchHistoryEntry {
     typeof entry?.id === 'string' &&
     typeof entry.city === 'string' &&
     typeof entry.countryCode === 'string' &&
-    typeof entry.searchedAt === 'string'
+    typeof entry.searchedAt === 'string' &&
+    (entry.coordinates === undefined ||
+      (typeof entry.coordinates.lat === 'number' && typeof entry.coordinates.lon === 'number'))
   );
 }
 
@@ -40,6 +42,7 @@ export function useSearchHistory() {
         city: report.city,
         countryCode: report.countryCode,
         searchedAt: report.retrievedAt,
+        ...(report.coordinates && { coordinates: report.coordinates }),
       };
       setHistory((previous) =>
         [entry, ...previous.filter((item) => item.id !== entry.id)].slice(0, MAX_HISTORY_ENTRIES),

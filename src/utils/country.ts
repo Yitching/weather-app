@@ -1,8 +1,8 @@
-import type { CountryOption } from '../types/weather';
+import { countries, type TCountryCode } from 'countries-list';
 
 /**
- * Turns whatever the user typed into the "Country" field (a full name such as
- * "Singapore", a common alias such as "UK", or an ISO code such as "SG") into
+ * Turns the country part of a search ("Osaka, Japan") — a full name such as
+ * "Singapore", a common alias such as "UK", or an ISO code such as "SG" — into
  * the ISO 3166-1 alpha-2 code expected by the OpenWeather API.
  *
  * Country names come from the browser's built-in `Intl.DisplayNames`, so no
@@ -57,13 +57,13 @@ function getNameVariants(officialName: string): string[] {
   return [officialName, withoutBrackets, withoutSar, withAnd];
 }
 
-let countryListCache: CountryOption[] | null = null;
+let nameToCodeCache: Map<string, string> | null = null;
 
-/** Every country (ISO code + English name), sorted by name. Built once. */
-function getCountryList(): CountryOption[] {
-  if (countryListCache) return countryListCache;
+/** Builds (once) a lookup of every country's normalised names and aliases → ISO code. */
+function getNameToCodeMap(): Map<string, string> {
+  if (nameToCodeCache) return nameToCodeCache;
 
-  const countries: CountryOption[] = [];
+  const map = new Map<string, string>();
   const A = 'A'.charCodeAt(0);
   for (let first = 0; first < 26; first++) {
     for (let second = 0; second < 26; second++) {
@@ -71,24 +71,10 @@ function getCountryList(): CountryOption[] {
       // Skip deprecated aliases (e.g. "UK"); the canonical code is added on its own turn.
       if (toCanonicalCountryCode(code) !== code) continue;
       const name = regionNames.of(code);
-      if (name) countries.push({ code, name });
-    }
-  }
-
-  countryListCache = countries.sort((a, b) => a.name.localeCompare(b.name));
-  return countryListCache;
-}
-
-let nameToCodeCache: Map<string, string> | null = null;
-
-/** Builds (once) a lookup of normalised country names and aliases → ISO code. */
-function getNameToCodeMap(): Map<string, string> {
-  if (nameToCodeCache) return nameToCodeCache;
-
-  const map = new Map<string, string>();
-  for (const { code, name } of getCountryList()) {
-    for (const variant of getNameVariants(name)) {
-      map.set(normaliseName(variant), code);
+      if (!name) continue;
+      for (const variant of getNameVariants(name)) {
+        map.set(normaliseName(variant), code);
+      }
     }
   }
   for (const [alias, code] of Object.entries(COUNTRY_ALIASES)) {
@@ -97,6 +83,15 @@ function getNameToCodeMap(): Map<string, string> {
 
   nameToCodeCache = map;
   return map;
+}
+
+/**
+ * Resolves a country name or alias ("Japan", "UK"), but not a bare ISO code, to an
+ * ISO alpha-2 code. Used when the text could also be a city ("JP" is not a country
+ * search; "UK" is).
+ */
+export function resolveCountryName(input: string): string | null {
+  return getNameToCodeMap().get(normaliseName(input)) ?? null;
 }
 
 /**
@@ -113,31 +108,16 @@ export function resolveCountryCode(input: string): string | null {
   return normalised.length === 2 ? toCanonicalCountryCode(normalised) : null;
 }
 
+/**
+ * The country's capital in English ("JP" → "Tokyo"), used when someone searches
+ * for a whole country. From the open-source `countries-list` package, so no
+ * capitals are maintained here. Null when there is none (e.g. Antarctica).
+ */
+export function getCapital(countryCode: string): string | null {
+  return countries[countryCode.toUpperCase() as TCountryCode]?.capital || null;
+}
+
 /** "SG" → "Singapore". Falls back to the code itself if it is unknown. */
 export function getCountryName(countryCode: string): string {
   return regionNames.of(countryCode.toUpperCase()) ?? countryCode;
-}
-
-/**
- * Countries matching what the user has typed, best matches first:
- * an exact name/alias/code match, then names starting with the text,
- * then names containing a word that starts with it ("korea" → "South Korea").
- */
-export function searchCountries(input: string, limit = 6): CountryOption[] {
-  const query = normaliseName(input);
-  if (!query) return [];
-
-  const exactCode = resolveCountryCode(query);
-  const startsWith: CountryOption[] = [];
-  const wordStartsWith: CountryOption[] = [];
-
-  for (const country of getCountryList()) {
-    if (country.code === exactCode) continue;
-    const name = normaliseName(country.name);
-    if (name.startsWith(query)) startsWith.push(country);
-    else if (name.includes(` ${query}`)) wordStartsWith.push(country);
-  }
-
-  const exactMatch = exactCode ? [{ code: exactCode, name: getCountryName(exactCode) }] : [];
-  return [...exactMatch, ...startsWith, ...wordStartsWith].slice(0, limit);
 }

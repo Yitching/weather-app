@@ -1,6 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { createApiResponse, jsonResponse, mockFetch } from '../test/fixtures';
+import {
+  createApiResponse,
+  createGeocodingPlace,
+  getRequestedCoordinates,
+  jsonResponse,
+  mockFetch,
+  mockOpenWeather,
+} from '../test/fixtures';
 import { useWeatherSearch } from './useWeatherSearch';
 
 describe('useWeatherSearch', () => {
@@ -15,7 +22,7 @@ describe('useWeatherSearch', () => {
 
     let searchPromise: Promise<unknown> = Promise.resolve();
     act(() => {
-      searchPromise = result.current.search({ city: 'Johor Bahru', country: 'MY' });
+      searchPromise = result.current.search('Johor Bahru, MY');
     });
     expect(result.current.state.status).toBe('loading');
 
@@ -32,20 +39,20 @@ describe('useWeatherSearch', () => {
     const fetchMock = mockFetch();
     const { result } = renderHook(() => useWeatherSearch());
 
-    await act(() => result.current.search({ city: '', country: '' }));
+    await act(() => result.current.search(''));
 
     expect(result.current.state).toEqual({
       status: 'error',
-      message: 'Please enter a city or a country.',
+      message: 'Please enter a city or a country, e.g. "Osaka" or "Japan".',
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('shows the API error message', async () => {
-    mockFetch(jsonResponse({ cod: '404', message: 'city not found' }, 404));
+    mockOpenWeather({ places: [] }); // the geocoding API has no such city
     const { result } = renderHook(() => useWeatherSearch());
 
-    await act(() => result.current.search({ city: 'xxx', country: '' }));
+    await act(() => result.current.search('xxx'));
 
     expect(result.current.state).toMatchObject({ status: 'error', message: /not found/i });
   });
@@ -57,7 +64,7 @@ describe('useWeatherSearch', () => {
     });
     const { result } = renderHook(() => useWeatherSearch());
 
-    await act(() => result.current.search({ city: 'Tokyo', country: '' }));
+    await act(() => result.current.search('Tokyo'));
 
     expect(result.current.state).toEqual({
       status: 'error',
@@ -66,14 +73,18 @@ describe('useWeatherSearch', () => {
   });
 
   it('ignores a slow earlier response when a newer search was started', async () => {
-    // First request never resolves on its own; it only rejects when aborted.
-    const fetchMock = vi.fn<typeof fetch>((_url, init) => {
+    // The first search's first request never resolves on its own; it only rejects
+    // when aborted. Later requests answer straight away.
+    const fetchMock = vi.fn<typeof fetch>((url, init) => {
       if (fetchMock.mock.calls.length === 1) {
         return new Promise((_resolve, reject) => {
           init?.signal?.addEventListener('abort', () =>
             reject(new DOMException('Aborted', 'AbortError')),
           );
         });
+      }
+      if (String(url).includes('/geo/')) {
+        return Promise.resolve(jsonResponse([createGeocodingPlace('Osaka', 'JP')]));
       }
       return Promise.resolve(jsonResponse(createApiResponse({ name: 'Osaka', country: 'JP' })));
     });
@@ -82,23 +93,43 @@ describe('useWeatherSearch', () => {
 
     let firstSearch: Promise<unknown> = Promise.resolve();
     act(() => {
-      firstSearch = result.current.search({ city: 'Tokyo', country: '' });
+      firstSearch = result.current.search('Tokyo');
     });
-    await act(() => result.current.search({ city: 'Osaka', country: '' }));
+    await act(() => result.current.search('Osaka'));
 
     await expect(firstSearch).resolves.toBeNull();
     expect(result.current.state).toMatchObject({ status: 'success', report: { city: 'Osaka' } });
+  });
+
+  it('searches a known place (e.g. a picked suggestion) without looking it up', async () => {
+    const fetchMock = mockFetch(jsonResponse(createApiResponse()));
+    const { result } = renderHook(() => useWeatherSearch());
+
+    await act(() =>
+      result.current.search({
+        city: 'Springfield',
+        countryCode: 'US',
+        coordinates: { lat: 39.8, lon: -89.64 },
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getRequestedCoordinates(fetchMock)).toBe('39.8,-89.64');
+    expect(result.current.state).toMatchObject({
+      status: 'success',
+      report: { city: 'Springfield', countryCode: 'US' },
+    });
   });
 
   it('clearError resets an error but keeps a successful result', async () => {
     mockFetch(jsonResponse(createApiResponse()));
     const { result } = renderHook(() => useWeatherSearch());
 
-    await act(() => result.current.search({ city: 'Johor Bahru', country: '' }));
+    await act(() => result.current.search('Johor Bahru'));
     act(() => result.current.clearError());
     expect(result.current.state.status).toBe('success');
 
-    await act(() => result.current.search({ city: '', country: '' }));
+    await act(() => result.current.search(''));
     act(() => result.current.clearError());
     expect(result.current.state).toEqual({ status: 'idle' });
   });
@@ -115,7 +146,7 @@ describe('useWeatherSearch', () => {
     const { result, unmount } = renderHook(() => useWeatherSearch());
 
     act(() => {
-      void result.current.search({ city: 'Tokyo', country: '' });
+      void result.current.search('Tokyo');
     });
     await waitFor(() => expect(receivedSignal).toBeDefined());
     unmount();

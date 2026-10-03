@@ -23,16 +23,31 @@ export function jsonResponse(body: unknown, status = 200): Response {
 type MockReply = Response | Error | DOMException;
 
 const isGeocodingRequest = (input: unknown) => String(input).includes('/geo/1.0/');
+const getQ = (input: unknown) => new URL(String(input)).searchParams.get('q') ?? '';
+
+/** By default the geocoding API "knows" any searched city: "Osaka,JP" → Osaka, JP. */
+function echoPlace(input: unknown) {
+  const [name = '', countryCode = ''] = getQ(input).split(',');
+  return [createGeocodingPlace(name, countryCode)];
+}
+
+interface MockFetchOptions {
+  /**
+   * Reply to geocoding requests (suggestions and typed searches alike).
+   * Defaults to one place named as searched.
+   */
+  places?: unknown;
+}
 
 /**
  * Replaces global fetch with a mock and returns it for assertions.
- * Weather requests receive `weatherReplies` in order; city-suggestion
- * (geocoding) requests always receive `suggestions`.
+ * Weather requests receive `weatherReplies` in order; geocoding requests receive
+ * `options.places`.
  */
-export function mockFetchWithSuggestions(suggestions: unknown, ...weatherReplies: MockReply[]) {
+export function mockOpenWeather({ places }: MockFetchOptions, ...weatherReplies: MockReply[]) {
   const queue = [...weatherReplies];
   const fetchMock = vi.fn<typeof fetch>(async (input) => {
-    if (isGeocodingRequest(input)) return jsonResponse(suggestions);
+    if (isGeocodingRequest(input)) return jsonResponse(places ?? echoPlace(input));
     const reply = queue.shift();
     if (reply === undefined) throw new TypeError('No mocked weather response left');
     if (reply instanceof Response) return reply;
@@ -42,32 +57,49 @@ export function mockFetchWithSuggestions(suggestions: unknown, ...weatherReplies
   return fetchMock;
 }
 
-/** Same as {@link mockFetchWithSuggestions}, with no city suggestions. */
+/** {@link mockOpenWeather} where the geocoding API knows these places. */
+export function mockFetchWithSuggestions(places: unknown, ...weatherReplies: MockReply[]) {
+  return mockOpenWeather({ places }, ...weatherReplies);
+}
+
+/** {@link mockOpenWeather} where every searched city exists. */
 export function mockFetch(...weatherReplies: MockReply[]) {
-  return mockFetchWithSuggestions([], ...weatherReplies);
+  return mockOpenWeather({}, ...weatherReplies);
 }
 
 type FetchMock = ReturnType<typeof mockFetch>;
 
-/** Only the weather requests (suggestion lookups are left out). */
+/** Only the weather requests (geocoding requests are left out). */
 export function getWeatherCalls(fetchMock: FetchMock) {
   return fetchMock.mock.calls.filter(([input]) => !isGeocodingRequest(input));
 }
 
-/** Only the city-suggestion requests. */
+/** Only the geocoding requests (suggestions and typed searches' place lookups). */
 export function getSuggestionCalls(fetchMock: FetchMock) {
   return fetchMock.mock.calls.filter(([input]) => isGeocodingRequest(input));
 }
 
-/** Reads the `q` search param from the n-th weather request. */
+/** The `q` of the n-th geocoding request: what was looked up by name. */
 export function getRequestedQuery(fetchMock: FetchMock, callIndex = 0) {
-  const url = getWeatherCalls(fetchMock)[callIndex]?.[0];
-  return new URL(String(url)).searchParams.get('q');
+  const url = getSuggestionCalls(fetchMock)[callIndex]?.[0];
+  return url === undefined ? null : getQ(url);
+}
+
+/** The `lat,lon` of the n-th weather request, or null if it searched by name. */
+export function getRequestedCoordinates(fetchMock: FetchMock, callIndex = 0) {
+  const url = new URL(String(getWeatherCalls(fetchMock)[callIndex]?.[0]));
+  const lat = url.searchParams.get('lat');
+  return lat === null ? null : `${lat},${url.searchParams.get('lon')}`;
 }
 
 /** A realistic OpenWeather geocoding ("direct") response item. */
-export function createGeocodingPlace(name: string, country: string, state?: string) {
-  return { name, country, state, lat: 1.46, lon: 103.76, local_names: { en: name } };
+export function createGeocodingPlace(
+  name: string,
+  country: string,
+  state?: string,
+  coordinates = { lat: 1.46, lon: 103.76 },
+) {
+  return { name, country, state, ...coordinates, local_names: { en: name } };
 }
 
 export function createReport(overrides: Partial<WeatherReport> = {}): WeatherReport {

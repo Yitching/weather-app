@@ -1,39 +1,77 @@
 import { describe, expect, it } from 'vitest';
-import { formatLocation, parseLocationInput, toApiQuery } from './location';
+import { formatLocation, getSuggestionQuery, parseLocationInput, toApiQuery } from './location';
 
 describe('parseLocationInput', () => {
-  it('accepts a city and a country name', () => {
-    expect(parseLocationInput({ city: ' Tokyo ', country: 'Japan' })).toEqual({
+  it.each([
+    [' Osaka ', { city: 'Osaka', countryCode: '' }],
+    ['Osaka, Japan', { city: 'Osaka', countryCode: 'JP' }],
+    ['osaka,jp', { city: 'osaka', countryCode: 'JP' }],
+    ['London, UK', { city: 'London', countryCode: 'GB' }],
+    ['Tokyo,', { city: 'Tokyo', countryCode: '' }],
+    // As filled in from a suggestion that shows a state: the state is ignored.
+    ['London, Ontario, Canada', { city: 'London', countryCode: 'CA' }],
+  ])('reads "%s"', (text, query) => {
+    expect(parseLocationInput(text)).toEqual({ ok: true, query });
+  });
+
+  it('keeps a city that shares its name with its country when a country is given', () => {
+    expect(parseLocationInput('Singapore, SG')).toEqual({
       ok: true,
-      query: { city: 'Tokyo', countryCode: 'JP' },
+      query: { city: 'Singapore', countryCode: 'SG' },
     });
   });
 
-  it('accepts a city on its own', () => {
-    expect(parseLocationInput({ city: 'Seoul', country: '' })).toEqual({
-      ok: true,
-      query: { city: 'Seoul', countryCode: '' },
-    });
-  });
-
-  it('accepts a country on its own', () => {
-    expect(parseLocationInput({ city: '', country: 'sg' })).toEqual({
-      ok: true,
-      query: { city: '', countryCode: 'SG' },
-    });
-  });
-
-  it('rejects an empty search (including whitespace only)', () => {
-    expect(parseLocationInput({ city: '   ', country: ' ' })).toEqual({
+  it.each(['', '   ', ',', ' , '])('asks for a city or country when the text is "%s"', (text) => {
+    expect(parseLocationInput(text)).toEqual({
       ok: false,
-      error: 'Please enter a city or a country.',
+      error: 'Please enter a city or a country, e.g. "Osaka" or "Japan".',
     });
+  });
+
+  it.each([
+    ['Japan', { city: 'Tokyo', countryCode: 'JP', countryName: 'Japan' }],
+    ['south korea', { city: 'Seoul', countryCode: 'KR', countryName: 'south korea' }],
+    ['USA', { city: 'Washington D.C.', countryCode: 'US', countryName: 'USA' }],
+    ['UK', { city: 'London', countryCode: 'GB', countryName: 'UK' }],
+    ['Singapore', { city: 'Singapore', countryCode: 'SG', countryName: 'Singapore' }],
+    ['Japan,', { city: 'Tokyo', countryCode: 'JP', countryName: 'Japan' }],
+    [', Japan', { city: 'Tokyo', countryCode: 'JP', countryName: 'Japan' }],
+  ])('searches the capital when only a country is given ("%s")', (text, query) => {
+    expect(parseLocationInput(text)).toEqual({ ok: true, query });
+  });
+
+  it("searches the country's own name when it has no capital", () => {
+    expect(parseLocationInput('Antarctica')).toEqual({
+      ok: true,
+      query: { city: 'Antarctica', countryCode: 'AQ', countryName: 'Antarctica' },
+    });
+  });
+
+  it('does not treat a 2-letter city as a country code', () => {
+    expect(parseLocationInput('Ur')).toEqual({ ok: true, query: { city: 'Ur', countryCode: '' } });
   });
 
   it('rejects an unknown country with a helpful message', () => {
-    const result = parseLocationInput({ city: 'Paris', country: 'Atlantis' });
+    const result = parseLocationInput('Paris, Atlantis');
     expect(result.ok).toBe(false);
     expect(!result.ok && result.error).toMatch(/"Atlantis" is not a recognised country/);
+  });
+
+  it('asks for a city when there is none and the country is unknown', () => {
+    expect(parseLocationInput(', Atlantis')).toMatchObject({ ok: false, error: /enter a city/ });
+  });
+});
+
+describe('getSuggestionQuery', () => {
+  it.each([
+    ['Os', { city: 'Os', countryCode: '' }],
+    ['Os, Japan', { city: 'Os', countryCode: 'JP' }],
+    // A half-typed country is ignored, so the suggestions don't disappear meanwhile.
+    ['Os, Jap', { city: 'Os', countryCode: '' }],
+    ['London, Ontario, CA', { city: 'London', countryCode: 'CA' }],
+    ['Japan', { city: 'Tokyo', countryCode: 'JP', countryName: 'Japan' }],
+  ])('looks up "%s" as %o', (text, query) => {
+    expect(getSuggestionQuery(text)).toEqual(query);
   });
 });
 
@@ -44,10 +82,6 @@ describe('toApiQuery', () => {
 
   it('uses only the city when no country is given', () => {
     expect(toApiQuery({ city: 'Tokyo', countryCode: '' })).toBe('Tokyo');
-  });
-
-  it('uses the country name for a country-only search', () => {
-    expect(toApiQuery({ city: '', countryCode: 'SG' })).toBe('Singapore');
   });
 });
 

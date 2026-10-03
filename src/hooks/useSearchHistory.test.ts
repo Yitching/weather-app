@@ -71,8 +71,21 @@ describe('useSearchHistory', () => {
     expect(result.current.history).toEqual(saved);
   });
 
-  it('ignores corrupted saved history', () => {
-    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify([{ city: 42 }]));
+  it("remembers the report's coordinates, so search again finds the same place", () => {
+    const { result } = renderHook(() => useSearchHistory());
+    const coordinates = { lat: 35.82, lon: 127.15 };
+
+    act(() => result.current.addEntry(createReport({ city: 'Jeonju-si', coordinates })));
+
+    expect(result.current.history[0]).toMatchObject({ city: 'Jeonju-si', coordinates });
+    expect(readStoredHistory()).toEqual(result.current.history);
+  });
+
+  it.each([
+    ['corrupted entries', [{ city: 42 }]],
+    ['corrupted coordinates', [{ ...createHistoryEntry(), coordinates: { lat: '35' } }]],
+  ])('ignores saved history with %s', (_label, saved) => {
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(saved));
 
     const { result } = renderHook(() => useSearchHistory());
 

@@ -7,31 +7,29 @@ import { mockOpenWeather } from './mockOpenWeather';
  * by the Vitest unit and integration tests in src/.
  */
 
-const cityInput = (page: Page) => page.getByRole('combobox', { name: 'City' });
-const countryInput = (page: Page) => page.getByRole('combobox', { name: 'Country' });
+const searchInput = (page: Page) => page.getByRole('combobox', { name: 'Location' });
 const searchButton = (page: Page) => page.getByRole('button', { name: 'Search', exact: true });
 const historyItems = (page: Page) => page.getByRole('listitem');
 const weatherSection = (page: Page) => page.getByRole('region', { name: "Today's Weather" });
 
-/** Fakes the weather API, then opens the app. Returns the weather queries sent. */
+/** Fakes the weather API, then opens the app. Returns the names looked up. */
 async function openApp(page: Page) {
-  const weatherQueries = await mockOpenWeather(page);
+  const lookedUpNames = await mockOpenWeather(page);
   await page.goto('/');
-  return weatherQueries;
+  return lookedUpNames;
 }
 
 test('searches by city and country, and keeps the history after a reload', async ({ page }) => {
-  const weatherQueries = await openApp(page);
+  const lookedUpNames = await openApp(page);
   await expect(page.getByText('No Record')).toBeVisible();
 
-  await cityInput(page).fill('Osaka');
-  await countryInput(page).fill('Japan');
-  await page.keyboard.press('Escape'); // close the country suggestions
+  await searchInput(page).fill('Osaka, Japan');
+  await page.keyboard.press('Escape'); // close the suggestions
   await searchButton(page).click();
 
   await expect(weatherSection(page)).toContainText('Osaka, JP');
   await expect(weatherSection(page)).toContainText('Humidity: 58%');
-  expect(weatherQueries).toEqual(['Osaka,JP']);
+  expect(lookedUpNames).toContain('Osaka,JP');
   await expect(historyItems(page)).toHaveCount(1);
 
   await page.reload();
@@ -42,47 +40,51 @@ test('searches by city and country, and keeps the history after a reload', async
 test('shows a clear message for an unknown city, and Clear resets the form', async ({ page }) => {
   await openApp(page);
 
-  await cityInput(page).fill('xxx');
-  await cityInput(page).press('Enter');
+  await searchInput(page).fill('xxx');
+  await searchInput(page).press('Enter');
 
   await expect(page.getByRole('alert')).toHaveText('Not found. Please check the city and country.');
   await expect(page.getByText('No Record')).toBeVisible();
 
   await page.getByRole('button', { name: 'Clear' }).click();
-  await expect(cityInput(page)).toHaveValue('');
+  await expect(searchInput(page)).toHaveValue('');
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('picks a city from the suggestions with the keyboard', async ({ page }) => {
-  await openApp(page);
+  const lookedUpNames = await openApp(page);
 
-  await cityInput(page).pressSequentially('Joh');
+  await searchInput(page).pressSequentially('Joh');
   const suggestion = page.getByRole('option', { name: /Johor Bahru/ });
   await expect(suggestion).toBeVisible();
   // The list must sit on top of the page, not behind the weather card.
   await expect(suggestion).toBeInViewport();
 
-  await cityInput(page).press('ArrowDown');
-  await cityInput(page).press('Enter');
+  await searchInput(page).press('ArrowDown');
+  await searchInput(page).press('Enter');
 
   await expect(weatherSection(page)).toContainText('Johor Bahru, MY');
-  await expect(countryInput(page)).toHaveValue('Malaysia');
+  await expect(searchInput(page)).toHaveValue('Johor Bahru, MY');
+  // The suggestion's own coordinates were used: no lookup of "Johor Bahru" by name.
+  expect(lookedUpNames.every((name) => name.startsWith('Joh') && name.length <= 3)).toBe(true);
 });
 
 test('searches again from the history and deletes entries', async ({ page }) => {
-  const weatherQueries = await openApp(page);
+  const lookedUpNames = await openApp(page);
   for (const city of ['Seoul', 'Tokyo']) {
-    await cityInput(page).fill(city);
+    await searchInput(page).fill(city);
     await page.keyboard.press('Escape');
     await searchButton(page).click();
     await expect(weatherSection(page)).toContainText(city);
   }
   await expect(historyItems(page).first()).toContainText('Tokyo, JP');
+  const lookupsBefore = lookedUpNames.length;
 
   await page.getByRole('button', { name: 'Search Seoul, KR again' }).click();
   await expect(weatherSection(page)).toContainText('Seoul, KR');
   await expect(historyItems(page).first()).toContainText('Seoul, KR');
-  expect(weatherQueries.at(-1)).toBe('Seoul,KR');
+  // The saved coordinates were used: no new lookup by name.
+  expect(lookedUpNames.slice(lookupsBefore).filter((name) => name.startsWith('Seoul'))).toEqual([]);
 
   await page.getByRole('button', { name: 'Delete Tokyo, JP from history' }).click();
   await page.getByRole('button', { name: 'Delete Seoul, KR from history' }).click();
@@ -100,6 +102,39 @@ test('switches theme and remembers it after a reload', async ({ page }) => {
 
   await page.reload();
   await expect(html).toHaveAttribute('data-theme', otherTheme);
+});
+
+test('demo data works without the weather API and is remembered', async ({ page }) => {
+  const lookedUpNames = await openApp(page);
+  const demoSwitch = page.getByRole('switch', { name: 'Demo data' });
+
+  await demoSwitch.click();
+  await expect(demoSwitch).toBeChecked();
+  await searchInput(page).fill('Lon');
+  await page.getByRole('option', { name: /London.*Ontario/ }).click();
+
+  await expect(weatherSection(page)).toContainText('London, CA');
+  await expect(weatherSection(page)).toContainText('Humidity: 73%');
+  expect(lookedUpNames).toEqual([]);
+
+  await page.reload();
+  await expect(demoSwitch).toBeChecked();
+});
+
+test('narrows suggestions to a country, and searches a country by its capital', async ({
+  page,
+}) => {
+  await openApp(page);
+
+  await searchInput(page).pressSequentially('Se');
+  await expect(page.getByRole('option', { name: /Seoul/ })).toBeVisible();
+  await searchInput(page).pressSequentially(', Japan'); // Seoul is in Korea
+  await expect(page.getByRole('option')).toHaveCount(0);
+  await searchInput(page).fill('Japan');
+  await expect(page.getByRole('option', { name: /Tokyo.*Capital of Japan/ })).toBeVisible();
+  await searchInput(page).press('Enter');
+
+  await expect(weatherSection(page)).toContainText('Tokyo, JP');
 });
 
 test('fits the screen without horizontal scrolling', async ({ page }) => {
