@@ -39,18 +39,20 @@ app shows _"The weather service rejected the API key"_.
 
 ## Scripts
 
-| Command                 | What it does                                             |
-| ----------------------- | -------------------------------------------------------- |
-| `npm run dev`           | Start the dev server with hot reload                     |
-| `npm run build`         | Type-check and build for production into `dist/`         |
-| `npm run preview`       | Serve the production build locally                       |
-| `npm run lint`          | ESLint (TypeScript, React Hooks and accessibility rules) |
-| `npm run typecheck`     | TypeScript strict type-check                             |
-| `npm test`              | Run all unit and integration tests once                  |
-| `npm run test:watch`    | Run tests in watch mode                                  |
-| `npm run test:coverage` | Tests with a coverage report                             |
-| `npm run format`        | Format all files with Prettier                           |
-| `npm run check`         | lint → typecheck → test → build (everything a CI would)  |
+| Command                    | What it does                                                 |
+| -------------------------- | ------------------------------------------------------------ |
+| `npm run dev`              | Start the dev server with hot reload                         |
+| `npm run build`            | Type-check and build for production into `dist/`             |
+| `npm run preview`          | Serve the production build locally                           |
+| `npm run lint`             | ESLint (TypeScript, React Hooks and accessibility rules)     |
+| `npm run typecheck`        | TypeScript strict type-check                                 |
+| `npm test`                 | Run all unit and integration tests once                      |
+| `npm run test:watch`       | Run tests in watch mode                                      |
+| `npm run test:coverage`    | Tests with a coverage report                                 |
+| `npm run test:e2e:install` | One-time: download the browser for end-to-end tests          |
+| `npm run test:e2e`         | End-to-end tests in a real browser (desktop + mobile)        |
+| `npm run format`           | Format all files with Prettier                               |
+| `npm run check`            | lint → typecheck → test → build (no browser download needed) |
 
 ## Features
 
@@ -108,10 +110,14 @@ src/
 │   ├── format.ts              # Date/time and temperature formatting
 │   └── storage.ts             # Safe localStorage read/write
 ├── types/weather.ts           # Shared TypeScript types
-├── test/                      # Test setup and fixtures
+├── test/                      # Test setup and fixtures (unit/integration)
 ├── App.tsx                    # Page: wires hooks to components
 └── index.css                  # Theme tokens (CSS variables) and global styles
 ```
+
+End-to-end tests live outside `src/`: `e2e/weather.spec.ts` (the tests) and
+`e2e/mockOpenWeather.ts` (a fake OpenWeather API used inside the browser), configured
+by `playwright.config.ts`.
 
 **Design decisions**
 
@@ -144,6 +150,27 @@ src/
 Only `fetch` is mocked, so the tests are fast, deterministic and need no API key.
 Any request a test doesn't mock fails as if offline, so no test can reach the
 real network.
+
+### End-to-end tests (Playwright)
+
+Six short tests that open the real app in a real browser, and run twice: on a
+desktop screen and on a mobile phone screen (Pixel 7). They cover what a simulated
+browser can't:
+
+- searching and the history **surviving a real page reload**
+- the "Not found" message and the Clear button
+- picking a city suggestion with the keyboard, with the list **visible above the page**
+- search again and delete from the history
+- the theme choice surviving a reload
+- **no horizontal scrolling** on either screen size
+
+```bash
+npm run test:e2e:install   # first time only (~150 MB browser download)
+npm run test:e2e           # starts the app automatically, then runs the tests
+```
+
+The OpenWeather API is faked inside the browser, so these tests need **no API key
+and no internet**. Detailed edge cases are left to the faster Vitest tests above.
 
 ## Assumptions
 

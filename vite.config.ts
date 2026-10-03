@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    include: ['src/**/*.test.{ts,tsx}'], // e2e/ is run by Playwright instead
     setupFiles: ['./src/test/setup.ts'],
     // A dummy key so the API client can build request URLs during tests.
     env: { VITE_OPENWEATHER_API_KEY: 'test-api-key' },
