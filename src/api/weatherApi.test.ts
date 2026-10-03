@@ -9,12 +9,7 @@ import {
   mockFetch,
   mockOpenWeather,
 } from '../test/fixtures';
-import {
-  fetchCitySuggestions,
-  fetchCurrentWeather,
-  getWeatherIconUrl,
-  WeatherApiError,
-} from './weatherApi';
+import { fetchCitySuggestions, fetchCurrentWeather, WeatherApiError } from './weatherApi';
 
 const TOKYO = { city: 'Tokyo', countryCode: 'JP' };
 const TOKYO_PLACE = createGeocodingPlace('Tokyo', 'JP', 'Tokyo', { lat: 35.68, lon: 139.76 });
@@ -279,12 +274,6 @@ describe('fetchCurrentWeather', () => {
     await expect(fetchCurrentWeather(TOKYO, controller.signal)).rejects.toMatchObject({
       name: 'AbortError',
     });
-  });
-});
-
-describe('getWeatherIconUrl', () => {
-  it('builds the large icon URL', () => {
-    expect(getWeatherIconUrl('03d')).toBe('https://openweathermap.org/img/wn/03d@4x.png');
   });
 });
 

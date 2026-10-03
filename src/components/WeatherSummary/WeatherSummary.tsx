@@ -1,8 +1,8 @@
-import { getWeatherIconUrl } from '../../api/weatherApi';
 import type { WeatherSearchState } from '../../hooks/useWeatherSearch';
 import type { WeatherReport } from '../../types/weather';
 import { formatIsoDateTime, formatTemperature } from '../../utils/format';
 import { formatLocation } from '../../utils/location';
+import { getWeatherIllustration } from '../../utils/weatherIllustration';
 import { Spinner } from '../ui/Spinner';
 import styles from './WeatherSummary.module.css';
 
@@ -48,7 +48,7 @@ function WeatherDetails({ report }: { report: WeatherReport }) {
     <>
       <img
         className={styles.icon}
-        src={getWeatherIconUrl(report.iconCode)}
+        src={getWeatherIllustration(report.iconCode)}
         alt=""
         width={200}
         height={200}

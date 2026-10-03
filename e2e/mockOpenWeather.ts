@@ -42,12 +42,6 @@ const PLACES = [
 
 type Place = (typeof PLACES)[number];
 
-/** A transparent 1×1 PNG, served in place of OpenWeather's weather icons. */
-const BLANK_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-  'base64',
-);
-
 /** Matches a place by name (and country code, when the query has one). */
 function findPlaces(q: string, matchName: (placeName: string, text: string) => boolean) {
   const [text = '', countryCode = ''] = q.toLowerCase().split(',');
@@ -101,10 +95,6 @@ export async function mockOpenWeather(page: Page): Promise<string[]> {
     }
     return route.fulfill({ json: toWeatherResponse(place) });
   });
-
-  await page.route('https://openweathermap.org/img/**', (route) =>
-    route.fulfill({ contentType: 'image/png', body: BLANK_PNG }),
-  );
 
   return lookedUpNames;
 }

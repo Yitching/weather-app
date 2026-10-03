@@ -12,8 +12,8 @@
 
 :root,
 :root[data-theme='light'] {
-  --page-bg: linear-gradient(165deg, #bba3ec 0%, #a78ce1 45%, #9c86e3 100%);
-  --cloud-color: rgb(255 255 255 / 35%);
+  --page-bg-color: #a78ce1;
+  --page-bg-image: url('../assets/bg-light.png');
   --glass-bg: rgb(255 255 255 / 20%);
   --glass-border: rgb(255 255 255 / 50%);
   --glass-border-strong: rgb(255 255 255 / 60%);
@@ -38,8 +38,8 @@
 }
 
 :root[data-theme='dark'] {
-  --page-bg: linear-gradient(165deg, #6c47d6 0%, #5233bf 50%, #3e28a6 100%);
-  --cloud-color: rgb(255 255 255 / 8%);
+  --page-bg-color: #5233bf;
+  --page-bg-image: url('../assets/bg-dark.png');
   --glass-bg: rgb(26 26 26 / 30%);
   --glass-border: transparent;
   --glass-border-strong: rgb(255 255 255 / 25%);
@@ -71,7 +71,8 @@
 
 html {
   min-height: 100%;
-  background: var(--page-bg);
+  /* Shown while the sky image loads. */
+  background: var(--page-bg-color);
 }
 
 body {
@@ -82,17 +83,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Soft "clouds" in the background, like the mockup. */
+/*
+ * The cloudy sky for the current theme. A fixed layer rather than
+ * `background-attachment: fixed`, which mobile Safari ignores.
+ */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(ellipse 30% 20% at 10% 40%, var(--cloud-color), transparent 70%),
-    radial-gradient(ellipse 25% 18% at 90% 70%, var(--cloud-color), transparent 70%),
-    radial-gradient(ellipse 35% 20% at 20% 90%, var(--cloud-color), transparent 70%);
+  background: var(--page-bg-image) center / cover no-repeat;
 }
 
 button,

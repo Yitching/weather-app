@@ -4,7 +4,6 @@ import { toApiQuery } from '../utils/location';
 
 const CURRENT_WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather';
 const GEOCODING_URL = 'https://api.openweathermap.org/geo/1.0/direct';
-const ICON_BASE_URL = 'https://openweathermap.org/img/wn';
 /** OpenWeather's geocoding API returns at most 5 places. */
 const MAX_SUGGESTIONS = 5;
 
@@ -45,11 +44,6 @@ export class WeatherApiError extends Error {
     this.name = 'WeatherApiError';
     this.kind = kind;
   }
-}
-
-/** Builds the URL for OpenWeather's weather condition icon. */
-export function getWeatherIconUrl(iconCode: string): string {
-  return `${ICON_BASE_URL}/${iconCode}@4x.png`;
 }
 
 function errorFromStatus(status: number): WeatherApiError {
