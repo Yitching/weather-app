@@ -47,6 +47,8 @@ export function SearchForm({ values, onChange, onSearch, onClear, isLoading }: S
           title="Search"
         >
           {isLoading ? <Spinner /> : <SearchIcon />}
+          {/* Visible on mobile only, so the button can't be mistaken for an input. */}
+          <span className={styles.searchText}>{isLoading ? 'Searching…' : 'Search'}</span>
         </button>
         <button type="button" className={styles.clearButton} onClick={onClear}>
           Clear

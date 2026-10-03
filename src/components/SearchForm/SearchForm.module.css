@@ -48,7 +48,15 @@
   opacity: 0.8;
 }
 
-/* Mobile: inputs share the first row, buttons sit underneath. */
+/* Desktop shows the icon only, as in the mockup. */
+.searchText {
+  display: none;
+}
+
+/*
+ * Mobile: inputs share the first row; compact, labelled buttons sit underneath,
+ * aligned right so they read as actions rather than another input.
+ */
 @media (max-width: 640px) {
   .form {
     grid-template-columns: 1fr 1fr;
@@ -56,11 +64,30 @@
 
   .actions {
     grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .searchButton,
+  .clearButton {
+    height: 2.75rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
   }
 
   .searchButton {
-    flex: 1;
-    font-size: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    padding: 0 1.25rem;
+  }
+
+  .searchButton svg {
+    font-size: 1.125rem;
+  }
+
+  .searchText {
+    display: inline;
   }
 }
 
