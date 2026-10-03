@@ -1,0 +1,71 @@
+.form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.searchButton,
+.clearButton {
+  height: var(--control-height);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 600;
+  transition:
+    filter 0.15s ease,
+    transform 0.15s ease;
+}
+
+.searchButton {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  border: 0;
+  background: var(--button-bg);
+  color: var(--button-text);
+  font-size: 1.75rem;
+}
+
+.clearButton {
+  padding: 0 1.25rem;
+  border: 1px solid var(--glass-border-strong);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.searchButton:hover:not(:disabled),
+.clearButton:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.searchButton:disabled {
+  cursor: progress;
+  opacity: 0.8;
+}
+
+/* Mobile: inputs share the first row, buttons sit underneath. */
+@media (max-width: 640px) {
+  .form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+
+  .searchButton {
+    flex: 1;
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

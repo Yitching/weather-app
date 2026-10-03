@@ -1,0 +1,41 @@
+.page {
+  width: min(100% - 2rem, 62rem);
+  margin-inline: auto;
+  padding-block: 1.25rem 3rem;
+}
+
+.header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.alert {
+  margin-top: 1rem;
+}
+
+/* The large frosted-glass card holding today's weather and the history. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  margin-top: 8rem;
+  padding: 2.75rem 3.5rem 3rem;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: min(100% - 1.5rem, 62rem);
+  }
+
+  .card {
+    margin-top: 6.5rem;
+    padding: 1.75rem 1.25rem 1.5rem;
+    gap: 1.5rem;
+  }
+}

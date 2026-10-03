@@ -1,0 +1,126 @@
+/*
+ * Desktop: big temperature on the left, details in one row underneath.
+ * Mobile:  details move to a right-hand column next to the temperature.
+ */
+.summary {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  grid-template-areas:
+    'title title title title'
+    'temperature temperature temperature temperature'
+    'range range range range'
+    'location time humidity condition';
+  justify-content: space-between;
+  align-content: start;
+  align-items: end;
+  column-gap: 1.5rem;
+}
+
+.summary p {
+  margin: 0;
+}
+
+.title {
+  grid-area: title;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.message {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  color: var(--text-muted);
+}
+
+.icon {
+  position: absolute;
+  top: -7rem;
+  right: -1.5rem;
+  width: 15rem;
+  height: auto;
+  filter: drop-shadow(0 12px 24px rgb(0 0 0 / 15%));
+  pointer-events: none;
+}
+
+.temperature {
+  grid-area: temperature;
+  font-size: clamp(4.5rem, 12vw, 6.5rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--temperature-color);
+}
+
+.range {
+  grid-area: range;
+}
+
+.location {
+  grid-area: location;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.time {
+  grid-area: time;
+  color: var(--text-muted);
+}
+
+.humidity {
+  grid-area: humidity;
+  color: var(--text-muted);
+}
+
+.condition {
+  grid-area: condition;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--text-muted);
+}
+
+.description {
+  font-size: 0.8125rem;
+  text-transform: capitalize;
+}
+
+.location,
+.time,
+.humidity,
+.condition {
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .summary {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'title .'
+      'temperature condition'
+      'range humidity'
+      'location time';
+    column-gap: 0.75rem;
+  }
+
+  .icon {
+    top: -6rem;
+    right: -1rem;
+    width: 10rem;
+  }
+
+  .humidity,
+  .time {
+    text-align: right;
+  }
+
+  .location,
+  .time,
+  .humidity,
+  .condition {
+    padding-top: 0.25rem;
+  }
+}
