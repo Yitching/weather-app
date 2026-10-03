@@ -91,13 +91,15 @@ describe('AutocompleteField', () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it('submits the form on Enter when no suggestion is highlighted', async () => {
+  it('submits the form and closes the list on Enter when no suggestion is highlighted', async () => {
     const { input, user, onSelect, onSubmit } = renderField();
 
     await user.type(input, 'a{Enter}');
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSelect).not.toHaveBeenCalled();
+    expect(input).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   it('closes with Escape and when focus leaves the field', async () => {

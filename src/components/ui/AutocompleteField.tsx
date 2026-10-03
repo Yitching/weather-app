@@ -17,7 +17,8 @@ interface AutocompleteFieldProps<T> {
 /**
  * Text field with a suggestion list, following the WAI-ARIA combobox pattern:
  * ↑/↓ move through suggestions, Enter picks one, Escape closes the list.
- * When no suggestion is highlighted, Enter submits the surrounding form as usual.
+ * When no suggestion is highlighted, Enter closes the list and submits the
+ * surrounding form as usual.
  */
 export function AutocompleteField<T>({
   label,
@@ -70,7 +71,11 @@ export function AutocompleteField<T>({
         break;
       case 'Enter': {
         const activeItem = isListVisible ? suggestions[currentIndex] : undefined;
-        if (activeItem === undefined) return; // let the form submit
+        if (activeItem === undefined) {
+          // Searching what was typed: close the list and let the form submit.
+          close();
+          return;
+        }
         event.preventDefault();
         select(activeItem);
         break;
