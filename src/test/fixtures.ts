@@ -8,6 +8,7 @@ export function createApiResponse(overrides: { name?: string; country?: string }
     sys: { country: overrides.country ?? 'MY' },
     weather: [{ id: 802, main: 'Clouds', description: 'scattered clouds', icon: '03d' }],
     main: { temp: 30.6, feels_like: 35.1, temp_min: 29.2, temp_max: 31.8, humidity: 58 },
+    wind: { speed: 3.1, deg: 120 },
     cod: 200,
   };
 }
@@ -113,6 +114,8 @@ export function createReport(overrides: Partial<WeatherReport> = {}): WeatherRep
     temperatureMin: 29.2,
     temperatureMax: 31.8,
     humidity: 58,
+    feelsLike: 35.1,
+    windSpeed: 3.1,
     retrievedAt: new Date(2022, 8, 1, 9, 41).toISOString(),
     ...overrides,
   };

@@ -62,6 +62,17 @@ describe('useSearchHistory', () => {
     expect(readStoredHistory()).toHaveLength(1);
   });
 
+  it('clears every entry', () => {
+    const { result } = renderHook(() => useSearchHistory());
+    act(() => result.current.addEntry(createReport({ city: 'Osaka', countryCode: 'JP' })));
+    act(() => result.current.addEntry(createReport({ city: 'Seoul', countryCode: 'KR' })));
+
+    act(() => result.current.clearHistory());
+
+    expect(result.current.history).toEqual([]);
+    expect(readStoredHistory()).toEqual([]);
+  });
+
   it('restores saved history (e.g. after a page refresh)', () => {
     const saved = [createHistoryEntry({ city: 'Taipei', countryCode: 'TW' })];
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(saved));

@@ -22,15 +22,31 @@ describe('WeatherSummary', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Loading weather…');
   });
 
-  it('shows all weather details from the mockup', () => {
+  it('shows the place, time, temperature and conditions', () => {
     render(<WeatherSummary state={{ status: 'success', report: createReport() }} />);
 
     expect(screen.getByText('31°')).toBeInTheDocument();
     expect(screen.getByText('H: 32° L: 29°')).toBeInTheDocument();
     expect(screen.getByText('Johor Bahru, MY')).toBeInTheDocument();
-    expect(screen.getByText('01-09-2022 09:41am')).toBeInTheDocument();
-    expect(screen.getByText('Humidity: 58%')).toBeInTheDocument();
-    expect(screen.getByText('Clouds')).toBeInTheDocument();
+    expect(screen.getByText('Thu, 1 Sep 2022 · 9:41 AM')).toBeInTheDocument();
     expect(screen.getByText('scattered clouds')).toBeInTheDocument();
+  });
+
+  it('shows humidity, feels like and wind as labelled stats', () => {
+    render(<WeatherSummary state={{ status: 'success', report: createReport() }} />);
+
+    expect(screen.getByText('Humidity')).toBeInTheDocument();
+    expect(screen.getByText('58%')).toBeInTheDocument();
+    expect(screen.getByText('35°')).toBeInTheDocument();
+    expect(screen.getByText('11 km/h')).toBeInTheDocument();
+  });
+
+  it('leaves out stats the API did not provide', () => {
+    const report = createReport({ feelsLike: undefined, windSpeed: undefined });
+    render(<WeatherSummary state={{ status: 'success', report }} />);
+
+    expect(screen.getByText('58%')).toBeInTheDocument();
+    expect(screen.queryByText('Feels like')).not.toBeInTheDocument();
+    expect(screen.queryByText('Wind')).not.toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@
   --glass-border-strong: rgb(255 255 255 / 60%);
   --panel-bg: rgb(255 255 255 / 20%);
   --item-bg: rgb(255 255 255 / 40%);
+  --item-hover-bg: rgb(255 255 255 / 60%);
   --input-bg: rgb(255 255 255 / 25%);
   --menu-bg: rgb(248 245 255 / 98%);
   --menu-active-bg: rgb(108 64 181 / 14%);
@@ -45,6 +46,7 @@
   --glass-border-strong: rgb(255 255 255 / 25%);
   --panel-bg: rgb(26 26 26 / 30%);
   --item-bg: rgb(26 26 26 / 50%);
+  --item-hover-bg: rgb(26 26 26 / 65%);
   --input-bg: rgb(26 26 26 / 50%);
   --menu-bg: rgb(36 22 78 / 98%);
   --menu-active-bg: rgb(255 255 255 / 12%);
@@ -96,6 +98,48 @@ body::before {
   background: var(--page-bg-image) center / cover no-repeat;
 }
 
+/*
+ * A tint over the sky that follows the current weather (App sets `data-sky`
+ * on <html>): warm for sunshine, grey for clouds, deep blue at night.
+ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--sky-tint, transparent);
+  transition: background-color 0.8s ease;
+}
+
+:root[data-sky='clear'] {
+  --sky-tint: rgb(255 176 120 / 22%);
+}
+
+:root[data-sky='clouds'] {
+  --sky-tint: rgb(110 115 140 / 22%);
+}
+
+:root[data-sky='rain'] {
+  --sky-tint: rgb(50 80 160 / 22%);
+}
+
+:root[data-sky='storm'] {
+  --sky-tint: rgb(25 15 60 / 32%);
+}
+
+:root[data-sky='snow'] {
+  --sky-tint: rgb(235 242 255 / 30%);
+}
+
+:root[data-sky='mist'] {
+  --sky-tint: rgb(210 210 222 / 30%);
+}
+
+:root[data-sky='night'] {
+  --sky-tint: rgb(15 10 50 / 30%);
+}
+
 button,
 input {
   font: inherit;
@@ -128,5 +172,7 @@ button {
   *::before,
   *::after {
     transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

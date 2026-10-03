@@ -56,5 +56,7 @@ export function useSearchHistory() {
     [setHistory],
   );
 
-  return { history, addEntry, removeEntry };
+  const clearHistory = useCallback(() => setHistory([]), [setHistory]);
+
+  return { history, addEntry, removeEntry, clearHistory };
 }

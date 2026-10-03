@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getWeatherSource, type DataMode } from './api/weatherSource';
 import styles from './App.module.css';
 import { DataModeToggle } from './components/DataModeToggle/DataModeToggle';
@@ -13,11 +13,12 @@ import { useTheme } from './hooks/useTheme';
 import { useWeatherSearch } from './hooks/useWeatherSearch';
 import type { LocationQuery, SearchHistoryEntry } from './types/weather';
 import { formatLocation } from './utils/location';
+import { getSky } from './utils/weatherIllustration';
 
 /** "Today's Weather" page: wires the hooks (state) to the presentational components. */
 export default function App() {
   const { theme, toggleTheme } = useTheme();
-  const { history, addEntry, removeEntry } = useSearchHistory();
+  const { history, addEntry, removeEntry, clearHistory } = useSearchHistory();
   const { mode, setMode } = useDataMode();
   const source = getWeatherSource(mode);
   const { state, search, clearError, reset } = useWeatherSearch(source);
@@ -26,6 +27,14 @@ export default function App() {
   const isLoading = state.status === 'loading';
   const isApiKeyError =
     state.status === 'error' && (state.kind === 'invalid-key' || state.kind === 'missing-key');
+  const sky = state.status === 'success' ? getSky(state.report.iconCode) : undefined;
+
+  /** Tints the page background to match the weather shown (see index.css). */
+  useEffect(() => {
+    const root = document.documentElement;
+    if (sky) root.dataset.sky = sky;
+    else delete root.dataset.sky;
+  }, [sky]);
 
   const runSearch = async (input: string | LocationQuery) => {
     const report = await search(input);
@@ -98,6 +107,7 @@ export default function App() {
           entries={history}
           onSearchAgain={handleSearchAgain}
           onDelete={removeEntry}
+          onClearAll={clearHistory}
           isSearching={isLoading}
         />
       </main>

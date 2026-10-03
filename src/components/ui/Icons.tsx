@@ -57,3 +57,44 @@ export function MoonIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function MapPinIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </BaseIcon>
+  );
+}
+
+export function DropletIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 3s-6 6.6-6 11a6 6 0 0 0 12 0c0-4.4-6-11-6-11z" />
+    </BaseIcon>
+  );
+}
+
+export function ThermometerIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z" />
+    </BaseIcon>
+  );
+}
+
+export function WindIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7" />
+    </BaseIcon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="m9 6 6 6-6 6" />
+    </BaseIcon>
+  );
+}

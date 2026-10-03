@@ -17,27 +17,28 @@ interface DemoPlace {
 }
 
 /** Fixed sample weather for a few well-known places. */
+// prettier-ignore
 export const DEMO_PLACES: readonly DemoPlace[] = [
-  place('Singapore', '', 'SG', 'Thunderstorm', 'thunderstorm', '11d', 29.4, 27.8, 31.2, 82),
-  place('Kuala Lumpur', 'Kuala Lumpur', 'MY', 'Rain', 'light rain', '10d', 28.1, 25.9, 32.0, 79),
-  place('Johor Bahru', 'Johor', 'MY', 'Clouds', 'scattered clouds', '03d', 30.6, 29.2, 31.8, 58),
-  place('Tokyo', 'Tokyo', 'JP', 'Clouds', 'broken clouds', '04d', 22.7, 20.1, 24.3, 64),
-  place('Osaka', 'Osaka Prefecture', 'JP', 'Clear', 'clear sky', '01d', 24.1, 21.5, 26.0, 55),
-  place('Seoul', 'Seoul', 'KR', 'Rain', 'moderate rain', '10d', 18.2, 16.0, 19.8, 88),
-  place('Bangkok', 'Bangkok', 'TH', 'Clouds', 'few clouds', '02d', 33.0, 27.5, 34.6, 66),
-  place('Jakarta', 'Jakarta', 'ID', 'Haze', 'haze', '50d', 31.2, 26.4, 33.1, 70),
-  place('Mumbai', 'Maharashtra', 'IN', 'Rain', 'heavy intensity rain', '10d', 27.3, 26.1, 29.0, 91),
-  place('Dubai', 'Dubai', 'AE', 'Clear', 'clear sky', '01d', 37.8, 31.2, 40.5, 38),
-  place('Sydney', 'New South Wales', 'AU', 'Clear', 'clear sky', '01d', 19.5, 13.8, 21.0, 52),
-  place('London', 'England', 'GB', 'Drizzle', 'drizzle', '09d', 14.2, 11.6, 16.1, 81),
-  place('Paris', 'Ile-de-France', 'FR', 'Clouds', 'few clouds', '02d', 16.8, 12.9, 18.3, 67),
-  place('Berlin', '', 'DE', 'Mist', 'mist', '50d', 11.3, 9.0, 13.6, 93),
-  place('Reykjavik', 'Capital Region', 'IS', 'Snow', 'light snow', '13d', -1.4, -3.2, 0.8, 86),
-  place('New York', 'New York', 'US', 'Clear', 'clear sky', '01d', 21.6, 17.3, 23.4, 49),
-  place('Toronto', 'Ontario', 'CA', 'Clouds', 'scattered clouds', '03d', 15.0, 10.2, 17.5, 61),
-  place('London', 'Ontario', 'CA', 'Clouds', 'overcast clouds', '04d', 12.4, 8.9, 15.2, 73),
-  place('São Paulo', '', 'BR', 'Thunderstorm', 'thunderstorm', '11d', 25.9, 19.7, 28.3, 77),
-  place('Cairo', 'Cairo', 'EG', 'Clear', 'clear sky', '01d', 33.4, 23.8, 35.1, 27),
+  place('Singapore', '', 'SG', 'Thunderstorm', 'thunderstorm', '11d', 29.4, 27.8, 31.2, 82, 35.2, 4.6),
+  place('Kuala Lumpur', 'Kuala Lumpur', 'MY', 'Rain', 'light rain', '10d', 28.1, 25.9, 32.0, 79, 32.4, 2.1),
+  place('Johor Bahru', 'Johor', 'MY', 'Clouds', 'scattered clouds', '03d', 30.6, 29.2, 31.8, 58, 35.1, 3.1),
+  place('Tokyo', 'Tokyo', 'JP', 'Clouds', 'broken clouds', '04d', 22.7, 20.1, 24.3, 64, 22.9, 3.6),
+  place('Osaka', 'Osaka Prefecture', 'JP', 'Clear', 'clear sky', '01d', 24.1, 21.5, 26.0, 55, 24.0, 2.6),
+  place('Seoul', 'Seoul', 'KR', 'Rain', 'moderate rain', '10d', 18.2, 16.0, 19.8, 88, 18.4, 5.1),
+  place('Bangkok', 'Bangkok', 'TH', 'Clouds', 'few clouds', '02d', 33.0, 27.5, 34.6, 66, 39.8, 2.4),
+  place('Jakarta', 'Jakarta', 'ID', 'Haze', 'haze', '50d', 31.2, 26.4, 33.1, 70, 37.0, 1.5),
+  place('Mumbai', 'Maharashtra', 'IN', 'Rain', 'heavy intensity rain', '10d', 27.3, 26.1, 29.0, 91, 31.6, 6.2),
+  place('Dubai', 'Dubai', 'AE', 'Clear', 'clear sky', '01d', 37.8, 31.2, 40.5, 38, 41.3, 4.1),
+  place('Sydney', 'New South Wales', 'AU', 'Clear', 'clear sky', '01d', 19.5, 13.8, 21.0, 52, 19.0, 5.7),
+  place('London', 'England', 'GB', 'Drizzle', 'drizzle', '09d', 14.2, 11.6, 16.1, 81, 13.7, 4.9),
+  place('Paris', 'Ile-de-France', 'FR', 'Clouds', 'few clouds', '02d', 16.8, 12.9, 18.3, 67, 16.2, 3.3),
+  place('Berlin', '', 'DE', 'Mist', 'mist', '50d', 11.3, 9.0, 13.6, 93, 10.6, 1.8),
+  place('Reykjavik', 'Capital Region', 'IS', 'Snow', 'light snow', '13d', -1.4, -3.2, 0.8, 86, -6.8, 7.4),
+  place('New York', 'New York', 'US', 'Clear', 'clear sky', '01d', 21.6, 17.3, 23.4, 49, 21.1, 3.9),
+  place('Toronto', 'Ontario', 'CA', 'Clouds', 'scattered clouds', '03d', 15.0, 10.2, 17.5, 61, 14.3, 4.4),
+  place('London', 'Ontario', 'CA', 'Clouds', 'overcast clouds', '04d', 12.4, 8.9, 15.2, 73, 11.6, 3.0),
+  place('São Paulo', '', 'BR', 'Thunderstorm', 'thunderstorm', '11d', 25.9, 19.7, 28.3, 77, 26.8, 2.8),
+  place('Cairo', 'Cairo', 'EG', 'Clear', 'clear sky', '01d', 33.4, 23.8, 35.1, 27, 32.1, 5.2),
 ];
 
 function place(
@@ -51,6 +52,8 @@ function place(
   temperatureMin: number,
   temperatureMax: number,
   humidity: number,
+  feelsLike: number,
+  windSpeed: number,
 ): DemoPlace {
   return {
     state,
@@ -64,6 +67,8 @@ function place(
       temperatureMin,
       temperatureMax,
       humidity,
+      feelsLike,
+      windSpeed,
     },
   };
 }

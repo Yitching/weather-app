@@ -4,10 +4,35 @@
   background: var(--panel-bg);
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .title {
-  margin: 0 0 1.25rem;
-  font-size: 1rem;
-  font-weight: 400;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.clearAll {
+  padding: 0.25rem 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.clearAll:hover {
+  background: var(--item-bg);
 }
 
 .empty {
@@ -20,62 +45,111 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* The row is the containing block for the stretched "search again" button. */
 .item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.875rem 1rem 0.875rem 1.5rem;
+  padding: 0.625rem 0.5rem 0.625rem 1.25rem;
   border-radius: var(--radius-lg);
   background: var(--item-bg);
+  transition: background-color 0.15s ease;
+}
+
+.item:hover {
+  background: var(--item-hover-bg);
+}
+
+.item:has(.searchAgainButton:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .info {
   display: flex;
   flex: 1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.125rem;
   min-width: 0;
 }
 
 .location {
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .time {
-  flex-shrink: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
 }
 
 .actions {
   display: flex;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-/* Mobile: the time moves under the location name. */
+/* Makes the whole row clickable without nesting buttons. */
+.item .searchAgainButton,
+.item .searchAgainButton:hover:not(:disabled) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  /* A transform would make the button, not the row, the stretched area's containing block. */
+  transform: none;
+}
+
+.searchAgainButton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+}
+
+.searchAgainButton:focus-visible {
+  outline: none;
+}
+
+.item:hover .searchAgainButton:not(:disabled) {
+  color: var(--accent);
+}
+
+.searchAgainButton:disabled::after {
+  cursor: not-allowed;
+}
+
+/* Sits above the stretched hit area. */
+.deleteButton {
+  position: relative;
+  z-index: 1;
+}
+
+/* With a mouse, delete only shows on the row being pointed at or focused. */
+@media (hover: hover) {
+  .deleteButton {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  .item:hover .deleteButton,
+  .item:focus-within .deleteButton {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 640px) {
   .panel {
     padding: 1.25rem 1rem;
   }
 
   .item {
-    padding: 0.75rem 0.75rem 0.75rem 1rem;
-  }
-
-  .info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.125rem;
-  }
-
-  .actions {
-    gap: 0.5rem;
+    padding: 0.625rem 0.375rem 0.625rem 1rem;
   }
 }

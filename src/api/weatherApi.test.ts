@@ -59,6 +59,8 @@ describe('fetchCurrentWeather', () => {
         temperatureMin: 29.2,
         temperatureMax: 31.8,
         humidity: 58,
+        feelsLike: 35.1,
+        windSpeed: 3.1,
         retrievedAt: '2022-09-01T01:41:00.000Z',
         coordinates: { lat: 35.68, lon: 139.76 },
       });

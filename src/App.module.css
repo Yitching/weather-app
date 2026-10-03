@@ -48,6 +48,9 @@
   border-radius: var(--radius-xl);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
+  box-shadow:
+    0 24px 60px rgb(40 20 90 / 14%),
+    inset 0 1px 0 var(--glass-border);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }

@@ -39,6 +39,10 @@ export interface WeatherReport {
   temperatureMax: number;
   /** Relative humidity in %. */
   humidity: number;
+  /** "Feels like" temperature in °C, when the API provides it. */
+  feelsLike?: number;
+  /** Wind speed in m/s, when the API provides it. */
+  windSpeed?: number;
   /** ISO timestamp of when the user retrieved this report. */
   retrievedAt: string;
   /** Where the weather was taken, so "search again" finds the same place. Not set in demo mode. */

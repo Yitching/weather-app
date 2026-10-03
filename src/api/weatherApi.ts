@@ -11,7 +11,8 @@ const MAX_SUGGESTIONS = 5;
 interface OpenWeatherResponse {
   name: string;
   weather: Array<{ main: string; description: string; icon: string }>;
-  main: { temp: number; temp_min: number; temp_max: number; humidity: number };
+  main: { temp: number; temp_min: number; temp_max: number; humidity: number; feels_like?: number };
+  wind?: { speed?: number };
 }
 
 /** One place from OpenWeather's geocoding ("direct") response. */
@@ -92,6 +93,8 @@ function toWeatherReport(data: OpenWeatherResponse, place: ReportPlace): Weather
     temperatureMin: data.main.temp_min,
     temperatureMax: data.main.temp_max,
     humidity: data.main.humidity,
+    ...(typeof data.main.feels_like === 'number' && { feelsLike: data.main.feels_like }),
+    ...(typeof data.wind?.speed === 'number' && { windSpeed: data.wind.speed }),
     retrievedAt: new Date().toISOString(),
     coordinates: place.coordinates,
   };

@@ -12,16 +12,18 @@ const entries = [
 function renderHistory(props: Partial<Parameters<typeof SearchHistory>[0]> = {}) {
   const onSearchAgain = vi.fn();
   const onDelete = vi.fn();
+  const onClearAll = vi.fn();
   render(
     <SearchHistory
       entries={entries}
       onSearchAgain={onSearchAgain}
       onDelete={onDelete}
+      onClearAll={onClearAll}
       isSearching={false}
       {...props}
     />,
   );
-  return { onSearchAgain, onDelete, user: userEvent.setup() };
+  return { onSearchAgain, onDelete, onClearAll, user: userEvent.setup() };
 }
 
 describe('SearchHistory', () => {
@@ -38,8 +40,31 @@ describe('SearchHistory', () => {
     const items = screen.getAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(within(items[0]!).getByText('Johor, MY')).toBeInTheDocument();
-    expect(within(items[0]!).getByText('01-09-2022 09:41am')).toBeInTheDocument();
+    expect(within(items[0]!).getByText('Thu, 1 Sep 2022 · 9:41 AM')).toBeInTheDocument();
     expect(within(items[1]!).getByText('Osaka, JP')).toBeInTheDocument();
+  });
+
+  it('shows recent searches as relative times, with the full date as a tooltip', () => {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60_000);
+    renderHistory({ entries: [createHistoryEntry({ searchedAt: fiveMinutesAgo.toISOString() })] });
+
+    const time = screen.getByText('5 min ago');
+    expect(time).toHaveAttribute('datetime', fiveMinutesAgo.toISOString());
+    expect(time.getAttribute('title')).toMatch(/·/);
+  });
+
+  it('calls onClearAll from the "Clear all" button, which only shows when there is history', async () => {
+    const { onClearAll, user } = renderHistory();
+
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
+
+    expect(onClearAll).toHaveBeenCalledOnce();
+  });
+
+  it('hides "Clear all" when there is no history', () => {
+    renderHistory({ entries: [] });
+
+    expect(screen.queryByRole('button', { name: 'Clear all' })).not.toBeInTheDocument();
   });
 
   it('calls onSearchAgain with the entry when its search button is clicked', async () => {

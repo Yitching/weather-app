@@ -46,6 +46,8 @@ describe('fetchDemoWeather', () => {
       temperatureMin: 20.1,
       temperatureMax: 24.3,
       humidity: 64,
+      feelsLike: 22.9,
+      windSpeed: 3.6,
       // Stamped when the (simulated) response arrives, after the delay.
       retrievedAt: new Date(Date.UTC(2022, 8, 1, 1, 41) + DEMO_WEATHER_DELAY_MS).toISOString(),
     });

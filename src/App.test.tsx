@@ -42,7 +42,7 @@ describe('App', () => {
     await user.type(searchInput, 'Osaka, Japan');
     await user.click(searchButton());
 
-    expect(await screen.findByText('Humidity: 58%')).toBeInTheDocument();
+    expect(await screen.findByText('58%')).toBeInTheDocument();
     expect(getRequestedQuery(fetchMock)).toBe('Osaka,JP');
     expect(screen.getByRole('heading', { level: 1 }).parentElement).toHaveTextContent('Osaka, JP');
     expect(historyItems()).toHaveLength(1);
@@ -164,7 +164,7 @@ describe('App', () => {
     await user.type(searchInput, 'Joh');
     await user.click(await screen.findByRole('option', { name: /Johor Bahru/ }));
 
-    expect(await screen.findByText('Humidity: 58%')).toBeInTheDocument();
+    expect(await screen.findByText('58%')).toBeInTheDocument();
     // The suggestion's own coordinates are used: no second lookup by name.
     expect(getRequestedCoordinates(fetchMock)).toBe('1.46,103.76');
     expect(
@@ -307,7 +307,7 @@ describe('App', () => {
       await user.type(searchInput, 'Tokyo');
       await user.click(searchButton());
 
-      expect(await screen.findByText('Humidity: 64%')).toBeInTheDocument();
+      expect(await screen.findByText('64%')).toBeInTheDocument();
       expect(historyItems()[0]).toHaveTextContent('Tokyo, JP');
       expect(fetch).not.toHaveBeenCalled();
     });
@@ -328,7 +328,7 @@ describe('App', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(demoSwitch()).toBeChecked();
       await user.click(searchButton());
-      expect(await screen.findByText('Humidity: 64%')).toBeInTheDocument();
+      expect(await screen.findByText('64%')).toBeInTheDocument();
     });
 
     it('does not offer demo data for other errors', async () => {
@@ -348,11 +348,11 @@ describe('App', () => {
 
       await user.type(searchInput, 'Osaka');
       await user.click(searchButton());
-      expect(await screen.findByText('Humidity: 58%')).toBeInTheDocument();
+      expect(await screen.findByText('58%')).toBeInTheDocument();
 
       await user.click(demoSwitch());
 
-      expect(screen.queryByText('Humidity: 58%')).not.toBeInTheDocument();
+      expect(screen.queryByText('58%')).not.toBeInTheDocument();
     });
 
     it('starts in demo mode when no API key is configured', () => {

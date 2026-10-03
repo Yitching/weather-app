@@ -28,7 +28,7 @@ test('searches by city and country, and keeps the history after a reload', async
   await searchButton(page).click();
 
   await expect(weatherSection(page)).toContainText('Osaka, JP');
-  await expect(weatherSection(page)).toContainText('Humidity: 58%');
+  await expect(weatherSection(page)).toContainText(/Humiditys*58%/);
   expect(lookedUpNames).toContain('Osaka,JP');
   await expect(historyItems(page)).toHaveCount(1);
 
@@ -114,7 +114,7 @@ test('demo data works without the weather API and is remembered', async ({ page 
   await page.getByRole('option', { name: /London.*Ontario/ }).click();
 
   await expect(weatherSection(page)).toContainText('London, CA');
-  await expect(weatherSection(page)).toContainText('Humidity: 73%');
+  await expect(weatherSection(page)).toContainText(/Humiditys*73%/);
   expect(lookedUpNames).toEqual([]);
 
   await page.reload();
