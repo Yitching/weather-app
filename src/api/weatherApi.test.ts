@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createApiResponse, getRequestedQuery, jsonResponse, mockFetch } from '../test/fixtures';
-import { fetchCurrentWeather, getWeatherIconUrl, WeatherApiError } from './weatherApi';
+import {
+  createApiResponse,
+  createGeocodingPlace,
+  getRequestedQuery,
+  jsonResponse,
+  mockFetch,
+} from '../test/fixtures';
+import {
+  fetchCitySuggestions,
+  fetchCurrentWeather,
+  getWeatherIconUrl,
+  WeatherApiError,
+} from './weatherApi';
 
 const TOKYO = { city: 'Tokyo', countryCode: 'JP' };
 
@@ -114,5 +125,70 @@ describe('fetchCurrentWeather', () => {
 describe('getWeatherIconUrl', () => {
   it('builds the large icon URL', () => {
     expect(getWeatherIconUrl('03d')).toBe('https://openweathermap.org/img/wn/03d@4x.png');
+  });
+});
+
+describe('fetchCitySuggestions', () => {
+  it('calls the geocoding API with the text and a result limit', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
+
+    await fetchCitySuggestions('Joh', '');
+
+    const url = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]));
+    expect(url.origin + url.pathname).toBe('https://api.openweathermap.org/geo/1.0/direct');
+    expect(url.searchParams.get('q')).toBe('Joh');
+    expect(url.searchParams.get('limit')).toBe('5');
+    expect(url.searchParams.get('appid')).toBe('test-api-key');
+  });
+
+  it('narrows the search to a country when one is given', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
+
+    await fetchCitySuggestions('Joh', 'MY');
+
+    const url = new URL(String(vi.mocked(fetch).mock.calls[0]?.[0]));
+    expect(url.searchParams.get('q')).toBe('Joh,MY');
+  });
+
+  it('maps places and removes duplicates and malformed entries', async () => {
+    const places = [
+      createGeocodingPlace('Johor Bahru', 'MY', 'Johor'),
+      createGeocodingPlace('Johor Bahru', 'MY', 'Johor'), // duplicate
+      createGeocodingPlace('Johor', 'MY'), // no state
+      { name: 'Broken' }, // no country
+    ];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse(places))),
+    );
+
+    await expect(fetchCitySuggestions('Joh', '')).resolves.toEqual([
+      { id: 'johor bahru|johor|my', city: 'Johor Bahru', state: 'Johor', countryCode: 'MY' },
+      { id: 'johor||my', city: 'Johor', state: '', countryCode: 'MY' },
+    ]);
+  });
+
+  it('returns no suggestions for an unexpected response', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse({ cod: 200 }))),
+    );
+
+    await expect(fetchCitySuggestions('Joh', '')).resolves.toEqual([]);
+  });
+
+  it('throws a WeatherApiError when the request fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(jsonResponse({}, 401))),
+    );
+
+    await expect(fetchCitySuggestions('Joh', '')).rejects.toMatchObject({ kind: 'invalid-key' });
   });
 });

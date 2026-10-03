@@ -1,8 +1,11 @@
-import type { LocationQuery, WeatherReport } from '../types/weather';
+import type { CitySuggestion, LocationQuery, WeatherReport } from '../types/weather';
 import { toApiQuery } from '../utils/location';
 
 const CURRENT_WEATHER_URL = 'https://api.openweathermap.org/data/2.5/weather';
+const GEOCODING_URL = 'https://api.openweathermap.org/geo/1.0/direct';
 const ICON_BASE_URL = 'https://openweathermap.org/img/wn';
+/** OpenWeather's geocoding API returns at most 5 places. */
+const MAX_SUGGESTIONS = 5;
 
 /** The subset of OpenWeather's "Current weather" response that this app uses. */
 interface OpenWeatherResponse {
@@ -10,6 +13,13 @@ interface OpenWeatherResponse {
   sys: { country?: string };
   weather: Array<{ main: string; description: string; icon: string }>;
   main: { temp: number; temp_min: number; temp_max: number; humidity: number };
+}
+
+/** One place from OpenWeather's geocoding ("direct") response. */
+interface GeocodingPlace {
+  name: string;
+  country: string;
+  state?: string;
 }
 
 export type WeatherErrorKind =
@@ -83,14 +93,14 @@ function toWeatherReport(data: OpenWeatherResponse, query: LocationQuery): Weath
 }
 
 /**
- * Fetches today's weather (metric units) for a location.
- * @throws {WeatherApiError} with a user-friendly message on any failure.
- * Aborting via `signal` rejects with the native `AbortError` instead.
+ * Sends a GET request to OpenWeather and returns the parsed JSON body.
+ * Shared by every endpoint so API-key, network and HTTP errors are handled once.
  */
-export async function fetchCurrentWeather(
-  query: LocationQuery,
+async function requestOpenWeather(
+  baseUrl: string,
+  params: Record<string, string>,
   signal?: AbortSignal,
-): Promise<WeatherReport> {
+): Promise<unknown> {
   const apiKey = import.meta.env.VITE_OPENWEATHER_API_KEY;
   if (!apiKey) {
     throw new WeatherApiError(
@@ -99,11 +109,11 @@ export async function fetchCurrentWeather(
     );
   }
 
-  const params = new URLSearchParams({ q: toApiQuery(query), units: 'metric', appid: apiKey });
+  const query = new URLSearchParams({ ...params, appid: apiKey });
 
   let response: Response;
   try {
-    response = await fetch(`${CURRENT_WEATHER_URL}?${params.toString()}`, { signal });
+    response = await fetch(`${baseUrl}?${query.toString()}`, { signal });
   } catch (error) {
     if (signal?.aborted) throw error;
     throw new WeatherApiError(
@@ -113,8 +123,23 @@ export async function fetchCurrentWeather(
   }
 
   if (!response.ok) throw errorFromStatus(response.status);
+  return response.json().catch(() => null);
+}
 
-  const data: unknown = await response.json().catch(() => null);
+/**
+ * Fetches today's weather (metric units) for a location.
+ * @throws {WeatherApiError} with a user-friendly message on any failure.
+ * Aborting via `signal` rejects with the native `AbortError` instead.
+ */
+export async function fetchCurrentWeather(
+  query: LocationQuery,
+  signal?: AbortSignal,
+): Promise<WeatherReport> {
+  const data = await requestOpenWeather(
+    CURRENT_WEATHER_URL,
+    { q: toApiQuery(query), units: 'metric' },
+    signal,
+  );
   if (!isOpenWeatherResponse(data)) {
     throw new WeatherApiError(
       'unknown',
@@ -122,4 +147,41 @@ export async function fetchCurrentWeather(
     );
   }
   return toWeatherReport(data, query);
+}
+
+function isGeocodingPlace(value: unknown): value is GeocodingPlace {
+  const place = value as Partial<GeocodingPlace> | null;
+  return typeof place?.name === 'string' && typeof place.country === 'string';
+}
+
+/**
+ * Looks up places whose name matches what the user is typing, for the city autocomplete.
+ * Optionally narrowed to one country. Duplicate places (same name, state and country)
+ * are removed.
+ * @throws {WeatherApiError} on failure (callers may simply show no suggestions).
+ */
+export async function fetchCitySuggestions(
+  city: string,
+  countryCode: string,
+  signal?: AbortSignal,
+): Promise<CitySuggestion[]> {
+  const q = countryCode ? `${city},${countryCode}` : city;
+  const data = await requestOpenWeather(
+    GEOCODING_URL,
+    { q, limit: String(MAX_SUGGESTIONS) },
+    signal,
+  );
+  if (!Array.isArray(data)) return [];
+
+  const suggestions = new Map<string, CitySuggestion>();
+  for (const place of data.filter(isGeocodingPlace)) {
+    const suggestion: CitySuggestion = {
+      id: [place.name, place.state, place.country].join('|').toLowerCase(),
+      city: place.name,
+      state: place.state ?? '',
+      countryCode: place.country,
+    };
+    suggestions.set(suggestion.id, suggestion);
+  }
+  return [...suggestions.values()];
 }

@@ -41,3 +41,19 @@ export interface SearchHistoryEntry {
   /** ISO timestamp of the latest search for this location. */
   searchedAt: string;
 }
+
+/** A place suggested while the user types a city name. */
+export interface CitySuggestion {
+  /** Unique per place: name + state + country. */
+  id: string;
+  city: string;
+  /** State / province, e.g. "Johor". Empty when the API has none. */
+  state: string;
+  countryCode: string;
+}
+
+/** A country suggested while the user types in the Country field. */
+export interface CountryOption {
+  code: string;
+  name: string;
+}

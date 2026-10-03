@@ -20,6 +20,8 @@
   --panel-bg: rgb(255 255 255 / 20%);
   --item-bg: rgb(255 255 255 / 40%);
   --input-bg: rgb(255 255 255 / 25%);
+  --menu-bg: rgb(248 245 255 / 98%);
+  --menu-active-bg: rgb(108 64 181 / 14%);
   --text: #000;
   --text-muted: #3d3d3d;
   --accent: #6c40b5;
@@ -44,6 +46,8 @@
   --panel-bg: rgb(26 26 26 / 30%);
   --item-bg: rgb(26 26 26 / 50%);
   --input-bg: rgb(26 26 26 / 50%);
+  --menu-bg: rgb(36 22 78 / 98%);
+  --menu-active-bg: rgb(255 255 255 / 12%);
   --text: #fff;
   --text-muted: rgb(255 255 255 / 75%);
   --accent: #c9b5ff;

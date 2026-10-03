@@ -12,6 +12,10 @@ with a search history that survives page refreshes and a light/dark theme switch
 | -------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
 | ![Mobile light theme](docs/screenshots/mobile-light.png) | ![Mobile dark theme](docs/screenshots/mobile-dark.png) | ![Not found message](docs/screenshots/error.png) |
 
+| City suggestions                                                   |
+| ------------------------------------------------------------------ |
+| ![City suggestions while typing](docs/screenshots/suggestions.png) |
+
 ## Quick start
 
 **Requirements:** Node.js 20.19+ (or 22.12+) and npm.
@@ -53,6 +57,15 @@ app shows _"The weather service rejected the API key"_.
 - **Search by city, by country, or both.** The country can be a name
   (`Japan`, `south korea`, `Côte d'Ivoire`), an ISO code (`JP`) or a common alias
   (`UK`, `USA`, `UAE`). Press <kbd>Enter</kbd> or click the search button.
+- **Suggestions while typing.**
+  - **City:** after 2 letters, matching places appear from OpenWeather's
+    [Geocoding API](https://openweathermap.org/api/geocoding-api) (same API key), e.g.
+    "Joh" → _Johor Bahru · Johor, MY_. Picking one fills City and Country and searches
+    straight away. If the Country field holds a country, suggestions are limited to it.
+  - **Country:** instant matches from the built-in country list (no network call),
+    e.g. "kor" → _North Korea, South Korea_. Aliases and codes work too ("uk", "jp").
+  - Works with mouse, touch and keyboard (<kbd>↑</kbd>/<kbd>↓</kbd>, <kbd>Enter</kbd>,
+    <kbd>Esc</kbd>), and follows the WAI-ARIA combobox pattern for screen readers.
 - **Shows everything in the mockup:** temperature, high/low, location, time, humidity
   and condition (plus a description such as "scattered clouds" and a weather icon).
 - **Clear** empties both inputs and dismisses any error message.
@@ -75,20 +88,22 @@ app shows _"The weather service rejected the API key"_.
 ```
 src/
 ├── api/
-│   └── weatherApi.ts          # OpenWeather client: builds the request, maps the response, friendly errors
+│   └── weatherApi.ts          # OpenWeather client: current weather + city suggestions, friendly errors
 ├── components/
 │   ├── SearchForm/            # City + country inputs, Search and Clear buttons
 │   ├── WeatherSummary/        # "Today's Weather" card (idle / loading / result)
 │   ├── SearchHistory/         # History list + HistoryItem row (search again / delete)
 │   ├── ThemeToggle/           # Light/dark switch
-│   └── ui/                    # Reusable building blocks: TextField, IconButton, Alert, Spinner, Icons
+│   └── ui/                    # Reusable building blocks: TextField, AutocompleteField, IconButton, Alert, Spinner, Icons
 ├── hooks/
 │   ├── useWeatherSearch.ts    # Validation + API call + loading/error state, cancels stale requests
 │   ├── useSearchHistory.ts    # Add (de-duplicated) / remove history entries, persisted
+│   ├── useCitySuggestions.ts  # Debounced, cached city suggestions; failures never block searching
+│   ├── useDebouncedValue.ts   # Waits for typing to pause before using a value
 │   ├── useLocalStorageState.ts# useState that survives refresh, with corrupted-data protection
 │   └── useTheme.ts            # Theme state applied to <html data-theme>
 ├── utils/
-│   ├── country.ts             # Country name/alias/code → ISO code (uses built-in Intl data)
+│   ├── country.ts             # Country name/alias/code → ISO code, and country search (built-in Intl data)
 │   ├── location.ts            # Form input validation and API query building
 │   ├── format.ts              # Date/time and temperature formatting
 │   └── storage.ts             # Safe localStorage read/write
@@ -113,17 +128,22 @@ src/
 
 ## Testing
 
-109 tests (Vitest + React Testing Library) across 13 files, ~100% line coverage:
+137 tests (Vitest + React Testing Library) across 16 files, 100% line coverage:
 
 - **Unit tests** for utils (country lookup, formatting, validation, storage), the
   API client (all HTTP error codes, network failure, malformed responses, missing
-  key, abort) and every hook.
-- **Component tests** for each component's rendering and buttons.
+  key, abort, suggestion mapping and de-duplication) and every hook (including
+  debounce timing, caching and stale-result handling for suggestions).
+- **Component tests** for each component's rendering and buttons, including full
+  keyboard and mouse coverage of the autocomplete.
 - **Integration tests** (`App.test.tsx`) that drive the whole page like a user:
   search, loading, not found, invalid country, empty input, network error, Clear,
-  search again, delete, persistence after refresh and theme switching.
+  search again, delete, persistence after refresh, theme switching and picking
+  city/country suggestions.
 
 Only `fetch` is mocked, so the tests are fast, deterministic and need no API key.
+Any request a test doesn't mock fails as if offline, so no test can reach the
+real network.
 
 ## Assumptions
 
@@ -156,3 +176,13 @@ Only `fetch` is mocked, so the tests are fast, deterministic and need no API key
     time. For a production app it should sit behind a backend proxy rather than in
     browser code. That is outside the scope of this frontend test.
 13. **Browser support:** current versions of Chrome, Edge, Firefox and Safari.
+14. **Suggestions:**
+    - City lookups start at 2 characters and wait 300 ms after typing stops. Each
+      distinct lookup is cached for the session, to save API calls.
+    - Picking a city searches immediately, since that is almost always the intent.
+      Picking a country only fills the field, because the user usually types a
+      city next.
+    - If suggestions fail (offline, bad key), the list stays empty and searching
+      still works. Any error is shown when the user actually searches.
+    - The browser's own autofill is turned off on these two fields so it doesn't
+      cover the suggestion list.

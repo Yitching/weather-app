@@ -9,10 +9,13 @@ import App from './App';
 import { HISTORY_STORAGE_KEY } from './hooks/useSearchHistory';
 import {
   createApiResponse,
+  createGeocodingPlace,
   createHistoryEntry,
   getRequestedQuery,
+  getWeatherCalls,
   jsonResponse,
   mockFetch,
+  mockFetchWithSuggestions,
 } from './test/fixtures';
 
 function setup() {
@@ -50,7 +53,11 @@ describe('App', () => {
     let resolveFetch: (response: Response) => void = () => {};
     vi.stubGlobal(
       'fetch',
-      vi.fn(() => new Promise<Response>((resolve) => (resolveFetch = resolve))),
+      vi.fn((input: string) =>
+        input.includes('/geo/')
+          ? Promise.resolve(jsonResponse([])) // city suggestions: none
+          : new Promise<Response>((resolve) => (resolveFetch = resolve)),
+      ),
     );
     const { user, cityInput, searchButton } = setup();
 
@@ -77,7 +84,7 @@ describe('App', () => {
     expect(screen.getByText('No Record')).toBeInTheDocument();
   });
 
-  it('shows an error for an invalid country without calling the API', async () => {
+  it('shows an error for an invalid country without calling the weather API', async () => {
     const fetchMock = mockFetch();
     const { user, cityInput, countryInput, searchButton } = setup();
 
@@ -86,7 +93,34 @@ describe('App', () => {
     await user.click(searchButton());
 
     expect(screen.getByRole('alert')).toHaveTextContent('"Atlantis" is not a recognised country');
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getWeatherCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it('picking a city suggestion fills both fields and shows its weather', async () => {
+    const fetchMock = mockFetchWithSuggestions(
+      [createGeocodingPlace('Johor Bahru', 'MY', 'Johor'), createGeocodingPlace('Johor', 'MY')],
+      jsonResponse(createApiResponse({ name: 'Johor Bahru', country: 'MY' })),
+    );
+    const { user, cityInput, countryInput, historyItems } = setup();
+
+    await user.type(cityInput, 'Joh');
+    await user.click(await screen.findByRole('option', { name: /Johor Bahru/ }));
+
+    expect(await screen.findByText('Humidity: 58%')).toBeInTheDocument();
+    expect(getRequestedQuery(fetchMock)).toBe('Johor Bahru,MY');
+    expect(cityInput).toHaveValue('Johor Bahru');
+    expect(countryInput).toHaveValue('Malaysia');
+    expect(historyItems()[0]).toHaveTextContent('Johor Bahru, MY');
+  });
+
+  it('suggests countries as you type', async () => {
+    const { user, countryInput } = setup();
+
+    await user.type(countryInput, 'sing');
+    await user.click(screen.getByRole('option', { name: /Singapore/ }));
+
+    expect(countryInput).toHaveValue('Singapore');
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   it('asks for input when searching with empty fields', async () => {

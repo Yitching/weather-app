@@ -48,6 +48,17 @@
   opacity: 0.8;
 }
 
+/* In narrow lists the details wrap onto their own line instead of squeezing the name. */
+.suggestionName {
+  flex: 1 1 7rem;
+  overflow-wrap: break-word;
+}
+
+.suggestionMeta {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
 /* Desktop shows the icon only, as in the mockup. */
 .searchText {
   display: none;
